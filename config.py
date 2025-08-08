@@ -18,7 +18,7 @@ USERS = [
     {
         "username": "kremer",
         "password": "kremer1",
-        "portfolio_percentage": 0.61447851,
+        "portfolio_percentage": 0.60447851,
         "initial_investment": 130000
     },
     {
