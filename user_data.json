@@ -1,8 +1,14 @@
 {
   "foehr": {
-    "previous_login": "2025-08-16T17:49:44.170511",
-    "previous_portfolio_value": 21357.649910055843,
-    "last_login": "2025-08-16T17:50:15.308860",
-    "last_portfolio_value": 21357.649910055843
+    "previous_login": "2025-08-16T18:10:29.893663",
+    "previous_portfolio_value": 17962.5287307588,
+    "last_login": "2025-08-16T18:11:12.017929",
+    "last_portfolio_value": 17962.5287307588
+  },
+  "user": {
+    "previous_login": null,
+    "previous_portfolio_value": null,
+    "last_login": "2025-08-16T18:26:16.474521",
+    "last_portfolio_value": 362084.77157592773
   }
 }

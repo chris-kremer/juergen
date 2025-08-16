@@ -110,6 +110,12 @@ class PortfolioDashboard:
         
         st.subheader(get_text('all_users_overview', lang))
         
+        # Debug: Show current config values
+        st.write("Debug - Current config values:")
+        for user in USERS:
+            if user['username'] != 'user':
+                st.write(f"{user['username']}: {user.get('initial_investment', 'Not set')}")
+        
         # Calculate total portfolio value
         total_portfolio_value = self.price_fetcher.get_portfolio_value(stocks_with_prices)
         
