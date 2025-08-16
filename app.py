@@ -89,6 +89,12 @@ def main():
         def fetch_prices(language):
             return price_fetcher.fetch_stock_prices(STOCKS, language)
         
+        # Add cache clearing button in sidebar for development
+        with st.sidebar:
+            if st.button("🔄 Clear Cache & Refresh", use_container_width=True):
+                st.cache_data.clear()
+                st.rerun()
+        
         # Show loading message
         with st.spinner(get_text('fetching_prices', lang)):
             stocks_with_prices, failed_symbols = fetch_prices(lang)

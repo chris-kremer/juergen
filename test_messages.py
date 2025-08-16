@@ -7,15 +7,12 @@ from message_system import message_system
 # Add some test messages
 def add_test_messages():
     # Add a one-time message for all users
-    message_system.add_global_one_time_message(
-        "🎉 Welcome to the new Portfolio Overview! We've added message notifications to keep you informed.",
-        "success"
-    )
+
     
     # Add specific test messages
     message_system.add_one_time_message(
-        "juergen", 
-        "📊 Dein Portfolio-Dashboard wurde aktualisiert mit neuen Features!", 
+        "foehr", 
+        "Hey Christian & Sherry. Welcome to your stock overview!", 
         "info"
     )
     
@@ -30,6 +27,7 @@ def add_test_messages():
         "🚀 New feature: You'll now receive notifications about portfolio changes!",
         "info"
     )
+
     
     print("Test messages added successfully!")
 

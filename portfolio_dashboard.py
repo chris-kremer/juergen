@@ -184,7 +184,13 @@ class PortfolioDashboard:
         
         # Get historical data for 6 months
         with st.spinner("Loading historical data..."):
-            historical_data = self._get_portfolio_historical_data()
+            try:
+                historical_data = self._get_portfolio_historical_data()
+            except Exception as e:
+                st.error(f"Error loading historical data: {str(e)}")
+                historical_data = []
+        
+        st.write(f"Debug: Historical data points: {len(historical_data) if historical_data else 0}")
         
         if historical_data and len(historical_data) > 1:
             # Calculate portfolio values for each date
