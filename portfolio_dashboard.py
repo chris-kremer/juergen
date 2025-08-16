@@ -110,7 +110,7 @@ class PortfolioDashboard:
         
         st.subheader(get_text('all_users_overview', lang))
         
-        # Debug: Show current config values
+        # Debug: Show current config values (Updated: Annika 660, Foehr 20200)
         st.write("Debug - Current config values:")
         for user in USERS:
             if user['username'] != 'user':
