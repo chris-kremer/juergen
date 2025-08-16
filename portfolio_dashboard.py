@@ -245,6 +245,9 @@ class PortfolioDashboard:
             ])
             
             if not industry_df.empty:
+                # Sort by value descending (highest to lowest)
+                industry_df = industry_df.sort_values('Value', ascending=False)
+                
                 fig = px.bar(
                     industry_df, 
                     x='Industry', 
