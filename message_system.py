@@ -180,7 +180,7 @@ class MessageSystem:
         
         # For testing purposes, you can force weekend message by checking for test mode
         # Remove this after testing
-        test_mode = True  # Set to False in production
+        test_mode = False  # Set to False in production
         
         # Check if it's weekend (Saturday = 5, Sunday = 6) OR test mode
         if now_et.weekday() in [5, 6] or test_mode:  # Saturday or Sunday or test mode
