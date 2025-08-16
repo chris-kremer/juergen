@@ -12,8 +12,8 @@ USERS = [
     {
         "username": "foehr",
         "password": "foehr1",
-        "portfolio_percentage": 0.05898522,
-        "initial_investment": 20000
+        "portfolio_percentage": 0.05954698,
+        "initial_investment": 20200
     },
     {
         "username": "kremer",
@@ -24,8 +24,8 @@ USERS = [
     {
         "username": "annika",
         "password": "anakin",
-        "portfolio_percentage": 0.00324419,
-        "initial_investment": 800
+        "portfolio_percentage": 0.0029,
+        "initial_investment": 660
     },
     {
         "username": "juergen",
