@@ -11,15 +11,15 @@
     "dismissed": []
   },
   "foehr": {
-    "one_time": [
+    "one_time": [],
+    "dismissed": [
       {
         "id": "msg_1755360970.004321",
         "message": "\ud83c\udf89 Welcome to the new Portfolio Overview! We've added message notifications to keep you informed.",
         "type": "success",
         "created": "2025-08-16T17:16:10.004323"
       }
-    ],
-    "dismissed": []
+    ]
   },
   "kremer": {
     "one_time": [

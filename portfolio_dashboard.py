@@ -154,7 +154,7 @@ class PortfolioDashboard:
             else:
                 return 'color: gray'
         
-        styled_df = formatted_df.style.applymap(color_returns, subset=['Total Return', 'Return %'])
+        styled_df = formatted_df.style.map(color_returns, subset=['Total Return', 'Return %'])
         
         st.dataframe(
             styled_df,
@@ -178,202 +178,216 @@ class PortfolioDashboard:
             st.metric("Current Total", format_currency(current_total, lang))
     
     def show_historical_performance_chart(self, user: Dict, lang: str):
-        """Show historical portfolio performance vs URTH benchmark"""
+        """Show historical portfolio performance vs URTH benchmark with progressive loading"""
         
         st.subheader(get_text('historical_performance', lang))
         
-        # Get historical data for 6 months
-        with st.spinner("Loading historical data..."):
-            try:
-                historical_data = self._get_portfolio_historical_data()
-            except Exception as e:
-                st.error(f"Error loading historical data: {str(e)}")
-                historical_data = []
+        # Create containers for dynamic updates
+        chart_container = st.empty()
+        progress_container = st.empty()
+        metrics_container = st.empty()
         
-        st.write(f"Debug: Historical data points: {len(historical_data) if historical_data else 0}")
+        # Initialize dates for 6 months
+        from datetime import datetime, timedelta
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=180)
         
-        if historical_data and len(historical_data) > 1:
-            # Calculate portfolio values for each date
-            portfolio_history = []
-            urth_history = []
-            dates = []
+        # Create sample dates (monthly intervals)
+        sample_dates = []
+        current_date = start_date
+        while current_date <= end_date:
+            sample_dates.append(current_date)
+            current_date += timedelta(days=30)
+        
+        # Initialize chart with all values at 100
+        initial_portfolio_values = [100] * len(sample_dates)
+        initial_urth_values = [100] * len(sample_dates)
+        
+        # Create initial chart
+        fig = go.Figure()
+        
+        portfolio_trace = fig.add_trace(go.Scatter(
+            x=sample_dates,
+            y=initial_portfolio_values,
+            mode='lines',
+            name='Your Portfolio',
+            line=dict(color='#1f77b4', width=3)
+        ))
+        
+        urth_trace = fig.add_trace(go.Scatter(
+            x=sample_dates,
+            y=initial_urth_values,
+            mode='lines',
+            name='URTH Benchmark',
+            line=dict(color='#ff7f0e', width=2, dash='dash')
+        ))
+        
+        # Add baseline at 100
+        fig.add_hline(
+            y=100, 
+            line_dash="dot", 
+            line_color="gray", 
+            opacity=0.5,
+            annotation_text="Baseline (100)"
+        )
+        
+        # Customize layout
+        fig.update_layout(
+            title=get_text('portfolio_vs_benchmark', lang),
+            xaxis_title="Date",
+            yaxis_title=get_text('relative_performance', lang),
+            height=400,
+            hovermode='x unified',
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left", 
+                x=0.01
+            )
+        )
+        
+        # Show initial chart
+        with chart_container.container():
+            st.plotly_chart(fig, use_container_width=True, key="historical_chart")
+        
+        # Initialize arrays for progressive loading
+        portfolio_values = [100] * len(sample_dates)
+        urth_values = [100] * len(sample_dates)
+        
+        # Progressive data loading
+        total_points = len(sample_dates)
+        
+        with progress_container.container():
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+        
+        # Load data for each date progressively
+        for i, date in enumerate(sample_dates):
+            status_text.text(f"Loading data for {date.strftime('%B %Y')}... ({i+1}/{total_points})")
             
-            for date_data in historical_data:
-                date = date_data['date']
-                stocks = date_data['stocks']
-                
-                # Calculate total portfolio value for this date
-                total_value = 0
-                urth_price = None
-                
-                for stock in stocks:
-                    if stock['symbol'] == 'URTH':
-                        urth_price = stock['price']
-                    total_value += stock['quantity'] * stock['price']
-                
-                user_portfolio_value = total_value * user['portfolio_percentage']
-                
-                portfolio_history.append(user_portfolio_value)
-                if urth_price:
-                    urth_history.append(urth_price)
-                dates.append(date)
+            # Get real data for this date
+            portfolio_value, urth_value = self._get_single_date_data(date, user)
             
-            if portfolio_history and urth_history:
-                # Normalize to base 100
-                portfolio_base = portfolio_history[0]
-                urth_base = urth_history[0]
-                
-                portfolio_relative = [(value / portfolio_base) * 100 for value in portfolio_history]
-                urth_relative = [(price / urth_base) * 100 for price in urth_history]
-                
-                # Create line chart
-                fig = go.Figure()
-                
-                # Add portfolio line
-                fig.add_trace(go.Scatter(
-                    x=dates,
-                    y=portfolio_relative,
-                    mode='lines',
-                    name='Your Portfolio',
-                    line=dict(color='#1f77b4', width=3)
-                ))
-                
-                # Add URTH benchmark line
-                fig.add_trace(go.Scatter(
-                    x=dates,
-                    y=urth_relative,
-                    mode='lines',
-                    name='URTH Benchmark',
-                    line=dict(color='#ff7f0e', width=2, dash='dash')
-                ))
-                
-                # Add baseline at 100
-                fig.add_hline(
-                    y=100, 
-                    line_dash="dot", 
-                    line_color="gray", 
-                    opacity=0.5,
-                    annotation_text="Baseline (100)"
-                )
-                
-                # Customize layout
-                fig.update_layout(
-                    title=get_text('portfolio_vs_benchmark', lang),
-                    xaxis_title="Date",
-                    yaxis_title=get_text('relative_performance', lang),
-                    height=400,
-                    hovermode='x unified',
-                    legend=dict(
-                        yanchor="top",
-                        y=0.99,
-                        xanchor="left", 
-                        x=0.01
-                    )
-                )
-                
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Show current relative performance
-                if len(portfolio_relative) > 1:
-                    portfolio_change = portfolio_relative[-1] - 100
-                    urth_change = urth_relative[-1] - 100
-                    
-                    col1, col2, col3 = st.columns(3)
-                    
-                    with col1:
-                        st.metric(
-                            "Your Performance", 
-                            f"{portfolio_relative[-1]:.1f}",
-                            f"{portfolio_change:+.1f}"
-                        )
-                    
-                    with col2:
-                        st.metric(
-                            "URTH Performance", 
-                            f"{urth_relative[-1]:.1f}",
-                            f"{urth_change:+.1f}"
-                        )
-                    
-                    with col3:
-                        outperformance = portfolio_change - urth_change
-                        st.metric(
-                            "Outperformance",
-                            f"{outperformance:+.1f}",
-                            delta_color="normal" if outperformance >= 0 else "inverse"
-                        )
+            # Store the actual values
+            if i == 0:
+                # First point establishes the base
+                portfolio_base = portfolio_value
+                urth_base = urth_value
+                portfolio_values[i] = 100
+                urth_values[i] = 100
             else:
-                st.info("Insufficient historical data available")
-        else:
-            st.info("Historical data not available")
+                # Calculate relative values
+                portfolio_values[i] = (portfolio_value / portfolio_base) * 100 if portfolio_base > 0 else 100
+                urth_values[i] = (urth_value / urth_base) * 100 if urth_base > 0 else 100
+            
+            # Update chart
+            fig.data[0].y = portfolio_values[:i+1] + [100] * (len(sample_dates) - i - 1)
+            fig.data[1].y = urth_values[:i+1] + [100] * (len(sample_dates) - i - 1)
+            
+            # Update the chart display
+            with chart_container.container():
+                st.plotly_chart(fig, use_container_width=True, key=f"historical_chart_{i}")
+            
+            # Update progress
+            progress_bar.progress((i + 1) / total_points)
+            
+            # Small delay for visual effect
+            import time
+            time.sleep(0.3)
+        
+        # Final update with complete data
+        fig.data[0].y = portfolio_values
+        fig.data[1].y = urth_values
+        
+        with chart_container.container():
+            st.plotly_chart(fig, use_container_width=True, key="historical_chart_final")
+        
+        # Clear progress indicators
+        progress_container.empty()
+        
+        # Show final metrics
+        if len(portfolio_values) > 1:
+            portfolio_change = portfolio_values[-1] - 100
+            urth_change = urth_values[-1] - 100
+            
+            with metrics_container.container():
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric(
+                        "Your Performance", 
+                        f"{portfolio_values[-1]:.1f}",
+                        f"{portfolio_change:+.1f}"
+                    )
+                
+                with col2:
+                    st.metric(
+                        "URTH Performance", 
+                        f"{urth_values[-1]:.1f}",
+                        f"{urth_change:+.1f}"
+                    )
+                
+                with col3:
+                    outperformance = portfolio_change - urth_change
+                    st.metric(
+                        "Outperformance",
+                        f"{outperformance:+.1f}",
+                        delta_color="normal" if outperformance >= 0 else "inverse"
+                    )
     
-    def _get_portfolio_historical_data(self):
-        """Get historical portfolio data for the last 6 months"""
+    def _get_single_date_data(self, date, user):
+        """Get portfolio and URTH values for a single date"""
         try:
             import yfinance as yf
-            from datetime import datetime, timedelta
+            from datetime import timedelta
             
-            # Get historical data for the last 6 months
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=180)  # ~6 months
+            total_portfolio_value = 0
+            urth_price = None
             
-            # Sample dates (monthly intervals)
-            sample_dates = []
-            current_date = start_date
-            while current_date <= end_date:
-                sample_dates.append(current_date)
-                current_date += timedelta(days=30)  # Monthly samples
-            
-            historical_data = []
-            
-            for date in sample_dates:
-                date_str = date.strftime('%Y-%m-%d')
-                date_stocks = []
+            # Get data for each stock on this date
+            for stock in STOCKS:
+                if stock['symbol'] == 'CASH':
+                    total_portfolio_value += stock['quantity'] * 1.0
+                    continue
                 
-                # Get data for each stock on this date
-                for stock in STOCKS:
-                    if stock['symbol'] == 'CASH':
-                        date_stocks.append({
-                            'symbol': 'CASH',
-                            'quantity': stock['quantity'],
-                            'price': 1.0
-                        })
-                        continue
+                try:
+                    ticker = yf.Ticker(stock['symbol'])
+                    # Get data around this date
+                    hist = ticker.history(start=date - timedelta(days=5), end=date + timedelta(days=5))
                     
-                    try:
-                        ticker = yf.Ticker(stock['symbol'])
-                        # Get data around this date
-                        hist = ticker.history(start=date - timedelta(days=5), end=date + timedelta(days=5))
-                        
-                        if not hist.empty:
-                            # Use the closest available price
-                            price = float(hist['Close'].iloc[-1])
-                        else:
-                            # Fallback to default price
-                            price = stock['price']
-                        
-                        date_stocks.append({
-                            'symbol': stock['symbol'],
-                            'quantity': stock['quantity'],
-                            'price': price
-                        })
-                        
-                    except:
-                        # Use default price if error
-                        date_stocks.append({
-                            'symbol': stock['symbol'],
-                            'quantity': stock['quantity'],
-                            'price': stock['price']
-                        })
-                
-                historical_data.append({
-                    'date': date,
-                    'stocks': date_stocks
-                })
+                    if not hist.empty:
+                        # Use the closest available price
+                        price = float(hist['Close'].iloc[-1])
+                    else:
+                        # Fallback to default price
+                        price = stock['price']
+                    
+                    if stock['symbol'] == 'URTH':
+                        urth_price = price
+                    
+                    total_portfolio_value += stock['quantity'] * price
+                    
+                except:
+                    # Use default price if error
+                    price = stock['price']
+                    if stock['symbol'] == 'URTH':
+                        urth_price = price
+                    total_portfolio_value += stock['quantity'] * price
             
-            return historical_data
+            # Calculate user's portfolio value
+            user_portfolio_value = total_portfolio_value * user['portfolio_percentage']
+            
+            # If no URTH price found, use default
+            if urth_price is None:
+                urth_price = next((s['price'] for s in STOCKS if s['symbol'] == 'URTH'), 100)
+            
+            return user_portfolio_value, urth_price
             
         except Exception as e:
-            return []
+            # Return default values on error
+            default_portfolio = sum(s['quantity'] * s['price'] for s in STOCKS) * user['portfolio_percentage']
+            default_urth = next((s['price'] for s in STOCKS if s['symbol'] == 'URTH'), 100)
+            return default_portfolio, default_urth
     
     def show_returns_chart(self, user: Dict, lang: str):
         """Show position returns chart with time period selector"""
@@ -620,7 +634,7 @@ class PortfolioDashboard:
             else:
                 return 'color: red'
         
-        styled_df = formatted_df.style.applymap(color_daily_change, subset=[daily_change_col])
+        styled_df = formatted_df.style.map(color_daily_change, subset=[daily_change_col])
         
         st.dataframe(
             styled_df,
