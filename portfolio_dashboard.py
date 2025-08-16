@@ -83,6 +83,11 @@ class PortfolioDashboard:
         
         st.markdown("---")
         
+        # Show user overview if this is the "user" account
+        if user['username'] == 'user':
+            self.show_all_users_overview(stocks_with_prices, lang)
+            st.markdown("---")
+        
         # Multi-period returns chart
         self.show_returns_chart(user, lang)
         
@@ -93,6 +98,79 @@ class PortfolioDashboard:
         
         # Detailed holdings table
         self.show_holdings_table(stocks_with_prices, user, lang)
+    
+    def show_all_users_overview(self, stocks_with_prices: List[Dict], lang: str):
+        """Show overview of all users' portfolio values (only for 'user' account)"""
+        from config import USERS
+        
+        st.subheader(get_text('all_users_overview', lang))
+        
+        # Calculate total portfolio value
+        total_portfolio_value = self.price_fetcher.get_portfolio_value(stocks_with_prices)
+        
+        # Prepare data for all users
+        user_data = []
+        for user_info in USERS:
+            if user_info['username'] != 'user':  # Skip the overview user itself
+                user_value = total_portfolio_value * user_info['portfolio_percentage']
+                initial_investment = user_info.get('initial_investment', 0)
+                total_return = user_value - initial_investment
+                return_percentage = (total_return / initial_investment * 100) if initial_investment > 0 else 0
+                
+                user_data.append({
+                    'User': user_info['username'].title(),
+                    'Portfolio Value': user_value,
+                    'Initial Investment': initial_investment,
+                    'Total Return': total_return,
+                    'Return %': return_percentage,
+                    'Share %': user_info['portfolio_percentage'] * 100
+                })
+        
+        # Sort by portfolio value descending
+        user_data.sort(key=lambda x: x['Portfolio Value'], reverse=True)
+        
+        # Create DataFrame
+        df = pd.DataFrame(user_data)
+        
+        # Format for display
+        formatted_df = df.copy()
+        formatted_df['Portfolio Value'] = formatted_df['Portfolio Value'].apply(lambda x: format_currency(x, lang))
+        formatted_df['Initial Investment'] = formatted_df['Initial Investment'].apply(lambda x: format_currency(x, lang))
+        formatted_df['Total Return'] = formatted_df['Total Return'].apply(lambda x: format_currency_change(x, lang))
+        formatted_df['Return %'] = formatted_df['Return %'].apply(lambda x: f"{x:+.1f}%")
+        formatted_df['Share %'] = formatted_df['Share %'].apply(lambda x: f"{x:.1f}%")
+        
+        # Style the dataframe
+        def color_returns(val):
+            if '+' in str(val):
+                return 'color: green'
+            elif '-' in str(val):
+                return 'color: red'
+            else:
+                return 'color: gray'
+        
+        styled_df = formatted_df.style.applymap(color_returns, subset=['Total Return', 'Return %'])
+        
+        st.dataframe(
+            styled_df,
+            use_container_width=True,
+            hide_index=True
+        )
+        
+        # Summary stats
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            total_users = len(user_data)
+            st.metric("Active Users", total_users)
+        
+        with col2:
+            total_invested = sum([u['Initial Investment'] for u in user_data])
+            st.metric("Total Invested", format_currency(total_invested, lang))
+        
+        with col3:
+            current_total = sum([u['Portfolio Value'] for u in user_data])
+            st.metric("Current Total", format_currency(current_total, lang))
     
     def show_returns_chart(self, user: Dict, lang: str):
         """Show position returns chart with time period selector"""
@@ -133,11 +211,18 @@ class PortfolioDashboard:
             
             # Only include positions with meaningful changes or if they have live prices
             if abs(change_percentage) > 0.01 or stock.get('price_source') == 'live':
+                # Special color for URTH (benchmark)
+                if stock['symbol'] == 'URTH':
+                    color = '#1f77b4'  # Blue for benchmark
+                else:
+                    color = '#00AA00' if change_percentage >= 0 else '#FF4444'  # Green/red for others
+                
                 returns_data.append({
                     'Symbol': stock['symbol'],
                     'Name': stock['name'],
                     'Return (%)': change_percentage,
-                    'Color': '#00AA00' if change_percentage >= 0 else '#FF4444'  # Solid green/red
+                    'Color': color,
+                    'Is_Benchmark': stock['symbol'] == 'URTH'
                 })
         
         if returns_data:
@@ -171,6 +256,18 @@ class PortfolioDashboard:
             
             # Add zero line
             fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+            
+            # Add URTH benchmark line
+            urth_return = next((item['Return (%)'] for item in returns_data if item['Symbol'] == 'URTH'), None)
+            if urth_return is not None:
+                fig.add_hline(
+                    y=urth_return, 
+                    line_dash="dot", 
+                    line_color="#1f77b4", 
+                    opacity=0.7,
+                    annotation_text=f"URTH Benchmark: {urth_return:.1f}%",
+                    annotation_position="top right"
+                )
             
             st.plotly_chart(fig, use_container_width=True)
             

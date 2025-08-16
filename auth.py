@@ -76,7 +76,6 @@ class AuthSystem:
             lang = get_language(user['username'])
             with st.sidebar:
                 st.markdown(f"### {get_text('welcome', lang, user['username'].title())}")
-                st.markdown(f"**{get_text('portfolio_share', lang)}:** {user['portfolio_percentage']*100:.2f}%")
                 
                 if st.button(get_text('logout', lang), use_container_width=True):
                     self.logout()
