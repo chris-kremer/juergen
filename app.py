@@ -9,6 +9,7 @@ from price_fetcher import PriceFetcher
 from portfolio_dashboard import PortfolioDashboard
 from config import STOCKS
 from translations import get_language, get_text
+from message_system import message_system
 
 # Page configuration
 st.set_page_config(
@@ -91,6 +92,13 @@ def main():
         # Show loading message
         with st.spinner(get_text('fetching_prices', lang)):
             stocks_with_prices, failed_symbols = fetch_prices(lang)
+        
+        # Calculate current portfolio value for messages
+        total_portfolio_value = price_fetcher.get_portfolio_value(stocks_with_prices)
+        user_portfolio_value = total_portfolio_value * user['portfolio_percentage']
+        
+        # Show user messages (weekend, value changes, one-time messages)
+        message_system.show_messages(user['username'], user_portfolio_value)
         
         # Display dashboard
         dashboard.show_dashboard(user, stocks_with_prices, failed_symbols)
