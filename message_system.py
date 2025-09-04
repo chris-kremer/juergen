@@ -197,56 +197,12 @@ class MessageSystem:
                 "is_weekend": True
             }
         
-        # Also show message during market closed hours on weekdays (before 9:30 AM or after 4:00 PM ET)
-        try:
-            market_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
-            market_close = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
-            
-            if now_et.weekday() < 5 and (now_et < market_open or now_et > market_close):
-                lang = get_language(username)
-                
-                if lang == 'de':
-                    message = "🕐 Die Märkte sind geschlossen. Handel von 9:30 bis 16:00 Uhr ET, hier sind die neuesten Daten:"
-                else:
-                    message = "🕐 Markets are closed. Trading hours: 9:30 AM - 4:00 PM ET, here's the latest data:"
-                
-                return {
-                    "message": message,
-                    "type": "info",
-                    "is_market_closed": True
-                }
-        except:
-            pass
-        
         return None
     
     def get_user_messages(self, username: str, current_portfolio_value: float) -> List[Dict]:
-        """Get all pending messages for a user"""
-        messages = []
-        
-        # Get one-time messages
-        user_messages = self._load_messages()
-        if username in user_messages:
-            one_time_messages = user_messages[username].get("one_time", [])
-            for msg in one_time_messages:
-                messages.append({
-                    "id": msg["id"],
-                    "message": msg["message"],
-                    "type": msg["type"],
-                    "is_dismissible": True
-                })
-        
-        # Get value change message
-        value_change_msg = self.get_value_change_message(username, current_portfolio_value)
-        if value_change_msg:
-            messages.append(value_change_msg)
-        
-        # Get weekend message
+        """Only return the weekend message (suppress all others)."""
         weekend_msg = self.get_weekend_message(username)
-        if weekend_msg:
-            messages.append(weekend_msg)
-        
-        return messages
+        return [weekend_msg] if weekend_msg else []
     
     def show_messages(self, username: str, current_portfolio_value: float):
         """Display all pending messages for a user"""
