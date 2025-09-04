@@ -173,10 +173,10 @@ def get_text(key: str, language: str = 'en', *args) -> str:
 
 def format_currency(amount: float, language: str = 'en') -> str:
     """Format currency amount based on language"""
-    currency_symbol = '€' if language == 'de' else '$'
+    currency_symbol = '€'
     return f"{currency_symbol}{amount:,.2f}"
 
 def format_currency_change(amount: float, language: str = 'en') -> str:
     """Format currency change amount with proper sign and symbol"""
-    currency_symbol = '€' if language == 'de' else '$'
+    currency_symbol = '€'
     return f"{currency_symbol}{amount:+,.2f}"
