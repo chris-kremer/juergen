@@ -54,9 +54,9 @@ STOCKS = [
     {"symbol": "SHEL", "quantity": 74.0, "price": 30.61, "name": "Shell", "industry": "Oil & Gas"},
     {"symbol": "WFC", "quantity": 340.0, "price": 70.36, "name": "Wells Fargo", "industry": "Bank"},
     {"symbol": "3BAL.L", "quantity": 7.5, "price": 29.70, "name": "Index Fund", "industry": "European Banks"},
-    {"symbol": "DBPG.SG", "quantity": 47.0, "price": 212.65, "name": "Index Fund", "industry": "Index"},
+    {"symbol": "DBPG.DE", "quantity": 47.0, "price": 212.65, "name": "Index Fund", "industry": "Index"},
     {"symbol": "GS", "quantity": 8.0, "price": 608.10, "name": "Goldman Sachs", "industry": "Bank"},
     {"symbol": "LUV", "quantity": 80.0, "price": 28.79, "name": "Southwest (Airline)", "industry": "Airlines"},
     {"symbol": "UAL", "quantity": 50.0, "price": 68.92, "name": "United (Airline)", "industry": "Airlines"},
-    {"symbol": "CASH", "quantity": 91358.0, "price": 1.00, "name": "Cash", "industry": None}
+    {"symbol": "CASH", "quantity": 81358.0, "price": 1.00, "name": "Cash", "industry": None}
 ]
