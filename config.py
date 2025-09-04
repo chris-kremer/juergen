@@ -54,7 +54,7 @@ STOCKS = [
     {"symbol": "PLTR", "quantity": 85.0, "price": 113.08, "name": "Palantir", "industry": "Software"},
     {"symbol": "SHEL", "quantity": 74.0, "price": 30.61, "name": "Shell", "industry": "Oil & Gas"},
     {"symbol": "WFC", "quantity": 340.0, "price": 70.36, "name": "Wells Fargo", "industry": "Bank"},
-    {"symbol": "WITR", "quantity": 648.0, "price": 29.70, "name": "Index Fund", "industry": "European Banks"},
+    {"symbol": "3BAL.L", "quantity": 648.0, "price": 29.70, "name": "Index Fund", "industry": "European Banks"},
     {"symbol": "DBPG", "quantity": 47.0, "price": 212.65, "name": "Index Fund", "industry": "Index"},
     {"symbol": "GS", "quantity": 8.0, "price": 608.10, "name": "Goldman Sachs", "industry": "Bank"},
     {"symbol": "LUV", "quantity": 80.0, "price": 28.79, "name": "Southwest (Airline)", "industry": "Airlines"},
