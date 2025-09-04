@@ -46,7 +46,7 @@ STOCKS = [
     {"symbol": "BP", "quantity": 143.0, "price": 4.41, "name": "BP", "industry": "Oil & Gas"},
     {"symbol": "C", "quantity": 282.0, "price": 73.64, "name": "Citigroup", "industry": "Bank"},
     {"symbol": "1COV.DE", "quantity": 100.0, "price": 60.54, "name": "Covestro", "industry": "Chemicals"},
-    {"symbol": "HLBZF", "quantity": 162.0, "price": 192.25, "name": "Heidelberg Materials", "industry": "Materials"},
+    {"symbol": "HEI.DE", "quantity": 162.0, "price": 192.25, "name": "Heidelberg Materials", "industry": "Materials"},
     {"symbol": "HYMTF", "quantity": 80.0, "price": 44.62, "name": "Hyundai", "industry": "Automotive"},
     {"symbol": "EXV1.DE", "quantity": 284.0, "price": 27.83, "name": "Index Fund", "industry": "European Banks"},
     {"symbol": "URTH", "quantity": 493.0, "price": 100.48, "name": "Index Fund", "industry": "Index"},
