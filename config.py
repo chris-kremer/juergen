@@ -42,7 +42,7 @@ USERS = [
 ]
 
 STOCKS = [
-    {"symbol": "AGIF", "quantity": 5.4, "price": 365.00, "name": "Index Fund", "industry": "Index"},
+    {"symbol": "UQ2B.F", "quantity": 5.4, "price": 365.00, "name": "Index Fund", "industry": "Index"},
     {"symbol": "BP", "quantity": 143.0, "price": 4.41, "name": "BP", "industry": "Oil & Gas"},
     {"symbol": "C", "quantity": 282.0, "price": 73.64, "name": "Citigroup", "industry": "Bank"},
     {"symbol": "1COV.DE", "quantity": 100.0, "price": 60.54, "name": "Covestro", "industry": "Chemicals"},
