@@ -189,10 +189,10 @@ class PortfolioDashboard:
         progress_container = st.empty()
         metrics_container = st.empty()
         
-        # Initialize dates for 6 months
+        # Initialize dates for 1 year
         from datetime import datetime, timedelta
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=180)
+        start_date = end_date - timedelta(days=365)
         
         # Create sample dates (monthly intervals)
         sample_dates = []
