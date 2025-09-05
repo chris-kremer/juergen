@@ -184,22 +184,70 @@ class PortfolioDashboard:
         
         st.subheader(get_text('historical_performance', lang))
         
+        # Add controls for timeframe and granularity
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            timeframe_options = {
+                '1w': get_text('period_1w', lang),
+                '1m': get_text('period_1m', lang),
+                '3m': get_text('period_3m', lang),
+                '6m': get_text('period_6m', lang),
+                '1y': get_text('period_1y', lang)
+            }
+            selected_timeframe = st.selectbox(
+                get_text('timeframe', lang),
+                options=list(timeframe_options.keys()),
+                format_func=lambda x: timeframe_options[x],
+                index=4  # Default to 1y
+            )
+        
+        with col2:
+            granularity_options = {
+                'daily': get_text('daily', lang),
+                'weekly': get_text('weekly', lang),
+                'monthly': get_text('monthly', lang)
+            }
+            selected_granularity = st.selectbox(
+                get_text('granularity', lang),
+                options=list(granularity_options.keys()),
+                format_func=lambda x: granularity_options[x],
+                index=2  # Default to monthly
+            )
+        
         # Create containers for dynamic updates
         chart_container = st.empty()
         progress_container = st.empty()
         metrics_container = st.empty()
         
-        # Initialize dates for 1 year
+        # Calculate date range based on selected timeframe
         from datetime import datetime, timedelta
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=365)
         
-        # Create sample dates (monthly intervals)
+        timeframe_days = {
+            '1w': 7,
+            '1m': 30,
+            '3m': 90,
+            '6m': 180,
+            '1y': 365
+        }
+        
+        start_date = end_date - timedelta(days=timeframe_days[selected_timeframe])
+        
+        # Create sample dates based on granularity
         sample_dates = []
         current_date = start_date
+        
+        if selected_granularity == 'daily':
+            interval_days = 1
+        elif selected_granularity == 'weekly':
+            interval_days = 7
+        else:  # monthly
+            interval_days = 30
+            
         while current_date <= end_date:
             sample_dates.append(current_date)
-            current_date += timedelta(days=30)
+            current_date += timedelta(days=interval_days)
         
         # Initialize chart with all values at 100
         initial_portfolio_values = [100] * len(sample_dates)
@@ -265,7 +313,15 @@ class PortfolioDashboard:
         
         # Load data for each date progressively
         for i, date in enumerate(sample_dates):
-            status_text.text(f"Loading data for {date.strftime('%B %Y')}... ({i+1}/{total_points})")
+            # Format date display based on granularity
+            if selected_granularity == 'daily':
+                date_str = date.strftime('%Y-%m-%d')
+            elif selected_granularity == 'weekly':
+                date_str = date.strftime('%Y-W%U')
+            else:  # monthly
+                date_str = date.strftime('%B %Y')
+                
+            status_text.text(f"Loading data for {date_str}... ({i+1}/{total_points})")
             
             # Get real data for this date
             portfolio_value, urth_value = self._get_single_date_data(date, user)
