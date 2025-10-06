@@ -49,30 +49,46 @@ class PortfolioDashboard:
         # Calculate daily percentage change
         daily_percentage = (total_daily_change / user_portfolio_value * 100) if user_portfolio_value > 0 else 0
         
+        # Calculate top performers for metrics row
+        stock_changes = []
+        for stock in stocks_with_prices:
+            if stock['symbol'] == 'CASH':
+                continue
+            daily_change_pct = self.price_fetcher.get_daily_change_percentage(stock)
+            daily_change_value = self.price_fetcher.get_user_daily_change_value(stock, user['portfolio_percentage'])
+            if stock.get('price_source') == 'live':
+                stock_changes.append({
+                    'symbol': stock['symbol'],
+                    'name': stock['name'],
+                    'daily_change_pct': daily_change_pct,
+                    'daily_change_value': daily_change_value,
+                    'current_price': stock.get('current_price', stock['price'])
+                })
+
         # Key metrics row
-        col1, col2, col3, col4 = st.columns(4)
-        
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
+
         with col1:
             st.metric(
                 label=get_text('your_portfolio_value', lang),
                 value=format_currency(user_portfolio_value, lang),
                 delta=None
             )
-        
+
         with col2:
             st.metric(
                 label=get_text('total_return', lang),
                 value=format_currency_change(total_return_amount, lang),
                 delta=f"{total_return_percentage:+.1f}%" if total_return_percentage != 0 else None
             )
-        
+
         with col3:
             st.metric(
                 label=get_text('daily_change', lang),
                 value=format_currency_change(total_daily_change, lang),
                 delta=f"{daily_percentage:+.2f}%" if daily_percentage != 0 else None
             )
-        
+
         with col4:
             live_count = len([s for s in stocks_with_prices if s.get('price_source') == 'live'])
             st.metric(
@@ -80,19 +96,42 @@ class PortfolioDashboard:
                 value=f"{live_count}/{len(stocks_with_prices)-1}",  # -1 for cash
                 delta=None
             )
-        
+
+        with col5:
+            if stock_changes:
+                top_pct_stock = max(stock_changes, key=lambda x: x['daily_change_pct'])
+                st.metric(
+                    label=get_text('top_daily_pct', lang),
+                    value=top_pct_stock['name'],
+                    delta=f"{top_pct_stock['daily_change_pct']:+.2f}%"
+                )
+
+        with col6:
+            if stock_changes:
+                top_value_stock = max(stock_changes, key=lambda x: x['daily_change_value'])
+                st.metric(
+                    label=get_text('top_daily_value', lang),
+                    value=top_value_stock['name'],
+                    delta=format_currency_change(top_value_stock['daily_change_value'], lang)
+                )
+
         st.markdown("---")
-        
+
         # Show user overview if this is the "user" account
         if user['username'] == 'user':
             self.show_all_users_overview(stocks_with_prices, lang)
             st.markdown("---")
-        
+
         # Historical portfolio performance chart
         self.show_historical_performance_chart(user, lang)
         
         st.markdown("---")
-        
+
+        # Individual stock yearly performance chart
+        self.show_individual_stock_performance_chart(user, lang)
+
+        st.markdown("---")
+
         # Multi-period returns chart
         self.show_returns_chart(user, lang)
         
@@ -447,9 +486,138 @@ class PortfolioDashboard:
             default_urth = next((s['price'] for s in STOCKS if s['symbol'] == 'URTH'), 100)
             return default_portfolio, default_urth
     
+    def show_individual_stock_performance_chart(self, user: Dict, lang: str):
+        """Show yearly performance graph for each individual stock in the portfolio"""
+        # Note: user parameter kept for consistency with other chart methods
+
+        st.subheader(get_text('individual_stock_performance', lang))
+
+        # We can reuse the historical data that was already loaded for the portfolio performance
+        # Get 1-year data for all stocks
+        from datetime import datetime, timedelta
+
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=365)
+
+        # Create a progress indicator
+        progress_text = st.empty()
+        progress_bar = st.progress(0)
+
+        # Get all non-cash stocks
+        non_cash_stocks = [s for s in STOCKS if s['symbol'] != 'CASH']
+        total_stocks = len(non_cash_stocks)
+
+        # Collect data for all stocks
+        all_stock_data = []
+
+        for idx, stock in enumerate(non_cash_stocks):
+            progress_text.text(f"Loading data for {stock['symbol']}... ({idx + 1}/{total_stocks})")
+            progress_bar.progress((idx + 1) / total_stocks)
+
+            try:
+                import yfinance as yf
+                ticker = yf.Ticker(stock['symbol'])
+                hist = ticker.history(start=start_date, end=end_date)
+
+                if not hist.empty and len(hist) > 1:
+                    # Normalize to percentage change from start
+                    base_price = float(hist['Close'].iloc[0])
+                    dates = hist.index.tolist()
+                    normalized_values = [((float(price) - base_price) / base_price * 100) for price in hist['Close']]
+
+                    all_stock_data.append({
+                        'symbol': stock['symbol'],
+                        'name': stock['name'],
+                        'dates': dates,
+                        'values': normalized_values
+                    })
+            except Exception:
+                # Skip stocks that fail to load
+                continue
+
+        # Clear progress indicators
+        progress_text.empty()
+        progress_bar.empty()
+
+        # Create the chart with all stocks
+        if all_stock_data:
+            fig = go.Figure()
+
+            for stock_data in all_stock_data:
+                fig.add_trace(go.Scatter(
+                    x=stock_data['dates'],
+                    y=stock_data['values'],
+                    mode='lines',
+                    name=stock_data['symbol'],
+                    hovertemplate=f"<b>{stock_data['symbol']}</b><br>" +
+                                  "Date: %{x}<br>" +
+                                  "Return: %{y:.2f}%<extra></extra>"
+                ))
+
+            # Add baseline at 0
+            fig.add_hline(
+                y=0,
+                line_dash="dot",
+                line_color="gray",
+                opacity=0.5,
+                annotation_text="Baseline (0%)"
+            )
+
+            # Customize layout
+            fig.update_layout(
+                title=get_text('yearly_stock_performance', lang),
+                xaxis_title="Date",
+                yaxis_title=get_text('return_percentage', lang),
+                height=500,
+                hovermode='x unified',
+                legend=dict(
+                    yanchor="top",
+                    y=0.99,
+                    xanchor="right",
+                    x=0.99
+                )
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Summary stats
+            col1, col2, col3 = st.columns(3)
+
+            # Calculate final returns for each stock
+            final_returns = [(s['symbol'], s['values'][-1]) for s in all_stock_data]
+            final_returns.sort(key=lambda x: x[1], reverse=True)
+
+            with col1:
+                if final_returns:
+                    best_stock, best_return = final_returns[0]
+                    st.metric(
+                        get_text('best_performer', lang),
+                        best_stock,
+                        f"{best_return:+.2f}%"
+                    )
+
+            with col2:
+                if final_returns:
+                    worst_stock, worst_return = final_returns[-1]
+                    st.metric(
+                        get_text('worst_performer', lang),
+                        worst_stock,
+                        f"{worst_return:+.2f}%"
+                    )
+
+            with col3:
+                avg_return = sum([r[1] for r in final_returns]) / len(final_returns) if final_returns else 0
+                st.metric(
+                    get_text('average_return', lang),
+                    f"{avg_return:+.2f}%"
+                )
+        else:
+            st.warning(get_text('no_yearly_data_available', lang))
+
     def show_returns_chart(self, user: Dict, lang: str):
         """Show position returns chart with time period selector"""
-        
+        # Note: user parameter kept for consistency with other chart methods
+
         st.subheader(get_text('position_returns', lang))
         
         # Time period selector
@@ -647,7 +815,6 @@ class PortfolioDashboard:
             current_price = stock.get('current_price', stock['price'])
             your_quantity = stock['quantity'] * user['portfolio_percentage']
             your_value = your_quantity * current_price
-            price_change = self.price_fetcher.get_price_change_percentage(stock)
             daily_change_pct = self.price_fetcher.get_daily_change_percentage(stock)
             
             industry = stock.get('industry', 'N/A')

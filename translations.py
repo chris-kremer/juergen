@@ -74,7 +74,16 @@ TRANSLATIONS = {
         'fetching_price_for': 'Fetching price for {}...',
         'portfolio_app': 'Portfolio Overview Application',
         'data_disclaimer': 'Data provided by Yahoo Finance • Prices may be delayed',
-        
+        'top_daily_pct': 'Top Daily %',
+        'top_daily_value': 'Top Daily Value',
+        'individual_stock_performance': 'Individual Stock Yearly Performance',
+        'yearly_stock_performance': 'Yearly Stock Performance Comparison',
+        'return_percentage': 'Return (%)',
+        'best_performer': 'Best Performer',
+        'worst_performer': 'Worst Performer',
+        'average_return': 'Average Return',
+        'no_yearly_data_available': 'No yearly data available for stocks',
+
         # Industries
         'Europe': 'Europe',
         'Oil & Gas': 'Oil & Gas',
@@ -158,7 +167,16 @@ TRANSLATIONS = {
         'fetching_price_for': 'Lade Preis für {}...',
         'portfolio_app': 'Portfolio-Übersicht Anwendung',
         'data_disclaimer': 'Daten von Yahoo Finance bereitgestellt • Preise können verzögert sein',
-        
+        'top_daily_pct': 'Top Täglich %',
+        'top_daily_value': 'Top Täglich Wert',
+        'individual_stock_performance': 'Jährliche Performance einzelner Aktien',
+        'yearly_stock_performance': 'Jährlicher Aktien-Performance-Vergleich',
+        'return_percentage': 'Rendite (%)',
+        'best_performer': 'Bester Performer',
+        'worst_performer': 'Schlechtester Performer',
+        'average_return': 'Durchschnittliche Rendite',
+        'no_yearly_data_available': 'Keine Jahresdaten für Aktien verfügbar',
+
         # Industries
         'Europe': 'Europa',
         'Oil & Gas': 'Öl & Gas',
