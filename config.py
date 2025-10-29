@@ -24,8 +24,8 @@ USERS = [
     {
         "username": "annika",
         "password": "anakin",
-        "portfolio_percentage": 0.0029268,
-        "initial_investment": 770
+        "portfolio_percentage": 0.003117,
+        "initial_investment": 820
     },
     {
         "username": "juergen",
