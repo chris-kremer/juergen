@@ -7,37 +7,48 @@ USERS = [
         "username": "user",
         "password": "password",
         "portfolio_percentage": 1.0,
-        "initial_investment": 231158  
+        "initial_investment": 231158,
+        "paid_date": "2022-01-01"
     },
     {
         "username": "foehr",
         "password": "foehr1",
-        "portfolio_percentage": 0.06338,
-        "initial_investment": 21500
+        "portfolio_percentage": 0.06321,
+        "initial_investment": 20000,
+        "payments": [
+            {"amount": 20000, "date": "2025-07-01"},
+            {"amount": 300, "date": "2025-10-01"},
+            {"amount": 500, "date": "2025-11-01"},
+            {"amount": 500, "date": "2025-12-01"}
+        ]
     },
     {
         "username": "kremer",
         "password": "kremer1",
         "portfolio_percentage": 0.60447851,
-        "initial_investment": 130000
+        "initial_investment": 130000,
+        "paid_date": "2022-01-01"
     },
     {
         "username": "annika",
         "password": "anakin",
         "portfolio_percentage": 0.0033834,
-        "initial_investment": 920
+        "initial_investment": 920,
+        "paid_date": "2024-09-01"
     },
     {
         "username": "juergen",
         "password": "juergen1",
         "portfolio_percentage": 0.14746305,
-        "initial_investment": 50000
+        "initial_investment": 50000,
+        "paid_date": "2025-06-01"
     },
     {
         "username": "christian",
         "password": "chris1",
         "portfolio_percentage": 0.17582904,
-        "initial_investment": 30000
+        "initial_investment": 30000,
+        "paid_date": "2022-01-01"
     }
 ]
 

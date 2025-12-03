@@ -6,6 +6,7 @@ import streamlit as st
 from typing import Optional, Dict
 from config import USERS
 from translations import get_language, get_text
+from login_tracker import login_tracker
 
 class AuthSystem:
     def __init__(self):
@@ -19,10 +20,17 @@ class AuthSystem:
         Authenticate user with username and password
         Returns True if authentication successful, False otherwise
         """
+        import sys
         for user in USERS:
             if user['username'] == username and user['password'] == password:
                 st.session_state.authenticated = True
                 st.session_state.current_user = user
+
+                # Log successful login
+                print(f"AUTH: About to call log_login for {username}", file=sys.stderr, flush=True)
+                login_tracker.log_login(username)
+                print(f"AUTH: Finished calling log_login for {username}", file=sys.stderr, flush=True)
+
                 return True
         return False
     

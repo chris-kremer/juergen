@@ -34,11 +34,15 @@ class PortfolioDashboard:
         # Calculate portfolio metrics
         total_portfolio_value = self.price_fetcher.get_portfolio_value(stocks_with_prices)
         user_portfolio_value = total_portfolio_value * user['portfolio_percentage']
-        
-        # Calculate returns and daily changes
-        initial_investment = user.get('initial_investment', 0)
-        total_return_amount = user_portfolio_value - initial_investment
-        total_return_percentage = (total_return_amount / initial_investment * 100) if initial_investment > 0 else 0
+
+        # Calculate returns from tranches (not from initial_investment field)
+        total_invested, total_return_amount, total_return_percentage = self._calculate_tranche_returns(user, total_portfolio_value)
+
+        # Fallback to initial_investment if no tranches configured
+        if total_invested == 0:
+            initial_investment = user.get('initial_investment', 0)
+            total_return_amount = user_portfolio_value - initial_investment
+            total_return_percentage = (total_return_amount / initial_investment * 100) if initial_investment > 0 else 0
         
         # Calculate total daily change
         total_daily_change = sum([
@@ -117,14 +121,23 @@ class PortfolioDashboard:
 
         st.markdown("---")
 
+        # Investment tranche performance (moved up for better visibility)
+        self.show_investment_tranches(user, stocks_with_prices, lang)
+
+        st.markdown("---")
+
         # Show user overview if this is the "user" account
         if user['username'] == 'user':
             self.show_all_users_overview(stocks_with_prices, lang)
             st.markdown("---")
 
+            # Show login statistics for admin
+            self.show_login_statistics(lang)
+            st.markdown("---")
+
         # Historical portfolio performance chart
         self.show_historical_performance_chart(user, lang)
-        
+
         st.markdown("---")
 
         # Individual stock yearly performance chart
@@ -134,7 +147,7 @@ class PortfolioDashboard:
 
         # Multi-period returns chart
         self.show_returns_chart(user, lang)
-        
+
         st.markdown("---")
         
         # Portfolio breakdown charts
@@ -883,3 +896,451 @@ class PortfolioDashboard:
             live_prices = len([s for s in stocks if s.get('price_source') == 'live'])
             total_non_cash = len([s for s in stocks if s['symbol'] != 'CASH'])
             st.metric(get_text('live_price_coverage', lang), f"{live_prices}/{total_non_cash}")
+
+    def show_investment_tranches(self, user: Dict, stocks_with_prices: List[Dict], lang: str):
+        """Show performance breakdown by investment tranche with annualized returns"""
+        from datetime import datetime
+        from config import USERS
+
+        st.subheader(get_text('investment_tranches', lang))
+
+        # Get current portfolio value
+        total_portfolio_value = self.price_fetcher.get_portfolio_value(stocks_with_prices)
+
+        # Get user config to access payment data
+        user_config = next((u for u in USERS if u['username'] == user['username']), None)
+        if not user_config:
+            st.warning("User configuration not found")
+            return
+
+        # Prepare tranches list
+        tranches = []
+
+        # Check if user has multiple payments or single paid_date
+        if 'payments' in user_config:
+            # Multiple payments
+            for payment in user_config['payments']:
+                tranches.append({
+                    'date': payment['date'],
+                    'amount': payment['amount'],
+                    'type': get_text('additional_payment', lang)
+                })
+        elif 'paid_date' in user_config:
+            # Single payment
+            tranches.append({
+                'date': user_config['paid_date'],
+                'amount': user_config.get('initial_investment', 0),
+                'type': get_text('initial_investment', lang)
+            })
+
+        if not tranches:
+            st.info("No payment information available")
+            return
+
+        # Calculate current date
+        today = datetime.now()
+
+        # Calculate value for each tranche
+        tranche_data = []
+        total_invested = 0
+        total_current_value = 0
+
+        for idx, tranche in enumerate(tranches):
+            investment_date = datetime.strptime(tranche['date'], '%Y-%m-%d')
+            amount_invested = tranche['amount']
+            total_invested += amount_invested
+
+            # Calculate days invested
+            days_invested = (today - investment_date).days
+            years_invested = days_invested / 365.25
+
+            # Get portfolio value at investment date
+            portfolio_value_at_date = self._get_portfolio_value_at_date(investment_date, stocks_with_prices)
+
+            # Calculate the portfolio percentage this investment would have bought
+            if portfolio_value_at_date > 0:
+                percentage_bought = amount_invested / portfolio_value_at_date
+            else:
+                percentage_bought = 0
+
+            # Calculate current value of this tranche
+            tranche_current_value = percentage_bought * total_portfolio_value
+            total_current_value += tranche_current_value
+
+            # Calculate returns
+            return_amount = tranche_current_value - amount_invested
+            return_pct = (return_amount / amount_invested * 100) if amount_invested > 0 else 0
+
+            # Calculate annualized return
+            if years_invested > 0 and amount_invested > 0:
+                annualized_return = (((tranche_current_value / amount_invested) ** (1 / years_invested)) - 1) * 100
+            else:
+                annualized_return = 0
+
+            tranche_data.append({
+                get_text('investment_date', lang): tranche['date'],
+                get_text('amount_invested', lang): amount_invested,
+                get_text('current_value', lang): tranche_current_value,
+                get_text('return_amount', lang): return_amount,
+                get_text('return_pct', lang): return_pct,
+                get_text('annualized_return', lang): annualized_return,
+                get_text('days_invested', lang): days_invested,
+                get_text('years_invested', lang): years_invested,
+                'Type': tranche['type'],
+                '_sort_date': investment_date  # For sorting
+            })
+
+        # Sort by date
+        tranche_data.sort(key=lambda x: x['_sort_date'])
+
+        # Remove sort key before display
+        for td in tranche_data:
+            del td['_sort_date']
+
+        # Create DataFrame
+        df = pd.DataFrame(tranche_data)
+
+        # Format for display
+        formatted_df = df.copy()
+        amount_col = get_text('amount_invested', lang)
+        current_val_col = get_text('current_value', lang)
+        return_amt_col = get_text('return_amount', lang)
+        return_pct_col = get_text('return_pct', lang)
+        ann_return_col = get_text('annualized_return', lang)
+        years_col = get_text('years_invested', lang)
+
+        formatted_df[amount_col] = formatted_df[amount_col].apply(lambda x: format_currency(x, lang))
+        formatted_df[current_val_col] = formatted_df[current_val_col].apply(lambda x: format_currency(x, lang))
+        formatted_df[return_amt_col] = formatted_df[return_amt_col].apply(lambda x: format_currency_change(x, lang))
+        formatted_df[return_pct_col] = formatted_df[return_pct_col].apply(lambda x: f"{x:+.2f}%")
+        formatted_df[ann_return_col] = formatted_df[ann_return_col].apply(lambda x: f"{x:+.2f}%")
+        formatted_df[years_col] = formatted_df[years_col].apply(lambda x: f"{x:.2f}")
+
+        # Hide days_invested column for cleaner display
+        display_df = formatted_df.drop(columns=[get_text('days_invested', lang)])
+
+        # Style the dataframe
+        def color_returns(val):
+            if '+' in str(val):
+                return 'color: green'
+            elif '-' in str(val):
+                return 'color: red'
+            else:
+                return 'color: gray'
+
+        styled_df = display_df.style.map(
+            color_returns,
+            subset=[return_amt_col, return_pct_col, ann_return_col]
+        )
+
+        st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+        # Verification section - only show if verification fails
+        # Calculate actual current value based on current portfolio percentage
+        actual_current_value = total_portfolio_value * user['portfolio_percentage']
+        difference = total_current_value - actual_current_value
+
+        # Check if difference is within acceptable range (0.1%)
+        tolerance = actual_current_value * 0.001
+        is_verified = abs(difference) <= tolerance
+
+        # Only display verification section if it fails
+        if not is_verified:
+            st.markdown("---")
+            st.subheader(get_text('total_verification', lang))
+
+            verification_cols = st.columns(4)
+
+            with verification_cols[0]:
+                st.metric(
+                    get_text('sum_of_tranches', lang),
+                    format_currency(total_current_value, lang)
+                )
+
+            with verification_cols[1]:
+                st.metric(
+                    get_text('actual_portfolio_value', lang),
+                    format_currency(actual_current_value, lang)
+                )
+
+            with verification_cols[2]:
+                st.metric(
+                    get_text('difference', lang),
+                    format_currency(difference, lang),
+                    delta=None
+                )
+
+            with verification_cols[3]:
+                st.error(get_text('verification_failed', lang))
+
+        # Show total returns breakdown
+        st.markdown("---")
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric(
+                get_text('amount_invested', lang),
+                format_currency(total_invested, lang)
+            )
+
+        with col2:
+            total_profit = total_current_value - total_invested
+            st.metric(
+                get_text('return_amount', lang) + " (Total)",
+                format_currency_change(total_profit, lang),
+                delta=f"{(total_profit / total_invested * 100):+.2f}%" if total_invested > 0 else None
+            )
+
+        with col3:
+            # Calculate weighted average annualized return
+            if total_invested > 0:
+                weighted_return = sum([
+                    (td[get_text('amount_invested', lang)] / total_invested) * td[get_text('annualized_return', lang)]
+                    for td in tranche_data
+                ])
+                st.metric(
+                    get_text('annualized_return', lang) + " (Avg)",
+                    f"{weighted_return:+.2f}%"
+                )
+
+        # Visualization: Pie chart of tranche contributions
+        st.markdown("---")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            # Pie chart by value
+            chart_data = []
+            for i, tranche in enumerate(tranches):
+                investment_date = datetime.strptime(tranche['date'], '%Y-%m-%d')
+                amount = tranche_data[i][get_text('current_value', lang)]
+
+                chart_data.append({
+                    'Date': tranche['date'],
+                    'Value': amount,
+                    'Label': f"{tranche['date']}\n{format_currency(tranche['amount'], lang)}"
+                })
+
+            chart_df = pd.DataFrame(chart_data)
+
+            if not chart_df.empty:
+                fig = px.pie(
+                    chart_df,
+                    values='Value',
+                    names='Date',
+                    title=f"{get_text('current_value', lang)} by Tranche"
+                )
+                fig.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig, use_container_width=True)
+
+        with col2:
+            # Bar chart of returns
+            bar_data = []
+            for i, td in enumerate(tranche_data):
+                bar_data.append({
+                    'Date': tranches[i]['date'],
+                    'Return %': td[get_text('return_pct', lang)],
+                    'Annualized %': td[get_text('annualized_return', lang)]
+                })
+
+            bar_df = pd.DataFrame(bar_data)
+
+            if not bar_df.empty:
+                fig = go.Figure()
+
+                fig.add_trace(go.Bar(
+                    x=bar_df['Date'],
+                    y=bar_df['Return %'],
+                    name='Total Return %',
+                    marker_color='lightblue'
+                ))
+
+                fig.add_trace(go.Bar(
+                    x=bar_df['Date'],
+                    y=bar_df['Annualized %'],
+                    name='Annualized Return %',
+                    marker_color='darkblue'
+                ))
+
+                fig.update_layout(
+                    title=f"{get_text('return_pct', lang)} vs {get_text('annualized_return', lang)}",
+                    xaxis_title=get_text('investment_date', lang),
+                    yaxis_title="Return %",
+                    barmode='group',
+                    height=400
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+
+    def _get_portfolio_value_at_date(self, date, current_stocks):
+        """Get total portfolio value at a specific historical date"""
+        from datetime import timedelta
+        import yfinance as yf
+
+        total_value = 0
+
+        for stock in STOCKS:
+            if stock['symbol'] == 'CASH':
+                total_value += stock['quantity'] * 1.0
+                continue
+
+            try:
+                ticker = yf.Ticker(stock['symbol'])
+                # Get data around this date (±5 days for buffer)
+                hist = ticker.history(start=date - timedelta(days=5), end=date + timedelta(days=5))
+
+                if not hist.empty:
+                    # Use the closest available price
+                    price = float(hist['Close'].iloc[-1])
+                else:
+                    # Fallback to default price
+                    price = stock['price']
+
+                total_value += stock['quantity'] * price
+
+            except:
+                # Use default price if error
+                total_value += stock['quantity'] * stock['price']
+
+        return total_value
+
+    def _calculate_tranche_returns(self, user, total_portfolio_value):
+        """Calculate returns based on payment tranches"""
+        from datetime import datetime
+        from config import USERS
+
+        # Get user config to access payment data
+        user_config = next((u for u in USERS if u['username'] == user['username']), None)
+        if not user_config:
+            return 0, 0, 0
+
+        # Prepare tranches list
+        tranches = []
+
+        # Check if user has multiple payments or single paid_date
+        if 'payments' in user_config:
+            # Multiple payments
+            for payment in user_config['payments']:
+                tranches.append({
+                    'date': payment['date'],
+                    'amount': payment['amount']
+                })
+        elif 'paid_date' in user_config:
+            # Single payment
+            tranches.append({
+                'date': user_config['paid_date'],
+                'amount': user_config.get('initial_investment', 0)
+            })
+
+        if not tranches:
+            return 0, 0, 0
+
+        # Sum up total amount invested from all tranches
+        total_invested = sum(t['amount'] for t in tranches)
+
+        # Current value is based on the user's actual portfolio percentage
+        current_value = total_portfolio_value * user['portfolio_percentage']
+
+        # Calculate returns: current value minus what was invested
+        total_return_amount = current_value - total_invested
+        total_return_percentage = (total_return_amount / total_invested * 100) if total_invested > 0 else 0
+
+        return total_invested, total_return_amount, total_return_percentage
+
+    def show_login_statistics(self, lang: str):
+        """Show login statistics (admin only)"""
+        from login_tracker import login_tracker
+        from datetime import datetime
+        import pandas as pd
+
+        st.subheader(get_text('admin_login_stats', lang))
+
+        # Check if tracking is enabled
+        if not login_tracker.enabled:
+            st.info(get_text('tracking_not_enabled', lang))
+            return
+
+        # Get login data
+        records = login_tracker.get_login_stats()
+
+        if not records:
+            st.info(get_text('no_login_data', lang))
+            return
+
+        # Convert to DataFrame
+        df = pd.DataFrame(records)
+
+        # Summary metrics
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            total_logins = len(df)
+            st.metric(get_text('total_logins', lang), total_logins)
+
+        with col2:
+            unique_users = df['Username'].nunique()
+            st.metric(get_text('unique_users', lang), unique_users)
+
+        with col3:
+            if not df.empty:
+                most_active = df['Username'].value_counts().index[0]
+                login_count = df['Username'].value_counts().iloc[0]
+                st.metric(
+                    get_text('most_active_user', lang),
+                    most_active.title(),
+                    f"{login_count} logins"
+                )
+
+        st.markdown("---")
+
+        # Recent logins table
+        st.markdown(f"### {get_text('recent_logins', lang)}")
+
+        # Sort by timestamp descending and show last 10
+        df_sorted = df.sort_values('Timestamp', ascending=False).head(10)
+
+        # Format for display
+        display_df = df_sorted[['Timestamp', 'Username']].copy()
+        display_df['Username'] = display_df['Username'].str.title()
+
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+        st.markdown("---")
+
+        # Visualizations
+        col1, col2 = st.columns(2)
+
+        with col1:
+            # Bar chart: Logins by user
+            st.markdown(f"### {get_text('logins_by_user', lang)}")
+
+            user_counts = df['Username'].value_counts().reset_index()
+            user_counts.columns = ['Username', 'Count']
+            user_counts['Username'] = user_counts['Username'].str.title()
+
+            fig = px.bar(
+                user_counts,
+                x='Username',
+                y='Count',
+                title=get_text('logins_by_user', lang)
+            )
+            fig.update_layout(xaxis_tickangle=-45, height=400)
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col2:
+            # Line chart: Logins over time
+            st.markdown(f"### {get_text('logins_over_time', lang)}")
+
+            # Parse timestamps and group by date
+            df['Date'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%d %H:%M:%S').dt.date
+            daily_logins = df.groupby('Date').size().reset_index(name='Logins')
+
+            fig = px.line(
+                daily_logins,
+                x='Date',
+                y='Logins',
+                title=get_text('logins_over_time', lang),
+                markers=True
+            )
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
