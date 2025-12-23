@@ -16,14 +16,19 @@ from report_generator import AnnualReportGenerator
 # Pre-generated Word reports mapped to users
 DOCX_REPORTS = {
     "kremer": {
-        "path": "Annual Performance Report DE.docx",
+        "path": "Annual Performance Report DE Mama&Papa.docx",
         "label": "Mama&Papa",
         "download_name": "kremer_annual_report_2025.docx",
     },
     "foehr": {
-        "path": "Annual Performance Report copy.docx",
+        "path": "Annual Performance Report DE Sherry & Christian.docx",
         "label": "Sherry&Christian",
         "download_name": "foehr_annual_report_2025.docx",
+    },
+    "juergen": {
+        "path": "Annual Performance Report DE Jürgen.docx",
+        "label": "Juergen",
+        "download_name": "juergen_annual_report_2025.docx",
     },
 }
 
@@ -1262,7 +1267,7 @@ class PortfolioDashboard:
         is_verified = abs(difference) <= tolerance
 
         # Only display verification section if it fails and the user is allowed to see it
-        if not is_verified and user.get('username') in ('user', 'foehr'):
+        if not is_verified and user.get('username') == 'user':
             st.markdown("---")
             st.subheader(get_text('total_verification', lang))
 
