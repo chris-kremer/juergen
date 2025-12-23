@@ -3,6 +3,8 @@ Portfolio dashboard for displaying user's portfolio overview
 """
 
 import os
+import unicodedata
+from pathlib import Path
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -191,20 +193,33 @@ class PortfolioDashboard:
         # Offer pre-generated Word doc if available for this user; otherwise skip PDF generation
         docx_info = DOCX_REPORTS.get(user.get('username'))
         if docx_info:
-            path = docx_info["path"]
-            if os.path.exists(path):
-                with open(path, "rb") as f:
+            target = Path(docx_info["path"])
+
+            def strip_accents(text: str) -> str:
+                return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
+
+            # Fallback: try to locate the file ignoring accents/casing
+            if not target.exists():
+                target_plain = strip_accents(target.name.lower().replace(".docx", ""))
+                for p in Path(".").glob("Annual Performance Report*.docx"):
+                    base_plain = strip_accents(p.name.lower().replace(".docx", ""))
+                    if target_plain in base_plain or user.get("username") in base_plain:
+                        target = p
+                        break
+
+            if target.exists():
+                with open(target, "rb") as f:
                     doc_bytes = f.read()
                 st.download_button(
                     label=f"{get_text('download_report', lang)} (.docx – {docx_info['label']})",
                     data=doc_bytes,
-                    file_name=docx_info.get("download_name", os.path.basename(path)),
+                    file_name=docx_info.get("download_name", target.name),
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     use_container_width=True,
                 )
                 return
             else:
-                st.warning(f"Report file not found: {path}")
+                st.warning(f"Report file not found: {docx_info['path']}")
                 return
         else:
             st.info(get_text('annual_report_desc', lang))
