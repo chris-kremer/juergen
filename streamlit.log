@@ -1,0 +1,202 @@
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://0.0.0.0:8501
+
+  For better performance, install the Watchdog module:
+
+  $ xcode-select --install
+  $ pip install watchdog
+            
+AUTH: About to call log_login for user
+DEBUG: log_login called for username: user
+DEBUG: Checking for gsheet_credentials in secrets...
+DEBUG: Found gsheet_credentials
+DEBUG: Creating credentials...
+DEBUG: Authorizing client...
+DEBUG: Sheet URL: https://docs.google.com/spreadsheets/d/120ZT_vHNgAPS1L2VshL-DDBJp5462yl3W_-9W9TKTrI/edit?gid=0#gid=0
+DEBUG: Opening sheet...
+DEBUG: Login tracking enabled successfully!
+DEBUG: Login tracking enabled: True
+DEBUG: Logging login for user at 2025-12-03 15:07:58
+DEBUG: Appending row to sheet: [2025-12-03 15:07:58, user, Unknown]
+DEBUG: Successfully logged login to sheet!
+AUTH: Finished calling log_login for user
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-26 00:00:00 -> 2025-07-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-26 00:00:00 -> 2025-10-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-27 00:00:00 -> 2025-11-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2021-12-27 00:00:00 -> 2022-01-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-08-27 00:00:00 -> 2024-09-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-05-27 00:00:00 -> 2025-06-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2021-12-27 00:00:00 -> 2022-01-06 00:00:00)
+2025-12-03 15:08:31.530 Uncaught app exception
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 88, in exec_func_with_error_handling
+    result = func()
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 579, in code_to_exec
+    exec(code, module.__dict__)
+  File "/Users/chris/juergen/app.py", line 127, in <module>
+    main()
+  File "/Users/chris/juergen/app.py", line 110, in main
+    dashboard.show_dashboard(user, stocks_with_prices, failed_symbols)
+  File "/Users/chris/juergen/portfolio_dashboard.py", line 125, in show_dashboard
+    self.show_investment_tranches(user, stocks_with_prices, lang)
+  File "/Users/chris/juergen/portfolio_dashboard.py", line 1082, in show_investment_tranches
+    self._show_all_users_tranches(stocks_with_prices, lang)
+  File "/Users/chris/juergen/portfolio_dashboard.py", line 963, in _show_all_users_tranches
+    for stock in stocks:
+NameError: name 'stocks' is not defined
+AUTH: About to call log_login for user
+DEBUG: log_login called for username: user
+DEBUG: Login tracking enabled: True
+DEBUG: Logging login for user at 2025-12-03 15:09:56
+DEBUG: Appending row to sheet: [2025-12-03 15:09:56, user, Unknown]
+DEBUG: Successfully logged login to sheet!
+AUTH: Finished calling log_login for user
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-26 00:00:00 -> 2025-07-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-26 00:00:00 -> 2025-10-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-27 00:00:00 -> 2025-11-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2021-12-27 00:00:00 -> 2022-01-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-08-27 00:00:00 -> 2024-09-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-05-27 00:00:00 -> 2025-06-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2021-12-27 00:00:00 -> 2022-01-06 00:00:00)
+2025-12-03 15:10:18.717 Uncaught app exception
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 88, in exec_func_with_error_handling
+    result = func()
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 579, in code_to_exec
+    exec(code, module.__dict__)
+  File "/Users/chris/juergen/app.py", line 127, in <module>
+    main()
+  File "/Users/chris/juergen/app.py", line 110, in main
+    dashboard.show_dashboard(user, stocks_with_prices, failed_symbols)
+  File "/Users/chris/juergen/portfolio_dashboard.py", line 125, in show_dashboard
+    self.show_investment_tranches(user, stocks_with_prices, lang)
+  File "/Users/chris/juergen/portfolio_dashboard.py", line 1082, in show_investment_tranches
+    self._show_all_users_tranches(stocks_with_prices, lang)
+  File "/Users/chris/juergen/portfolio_dashboard.py", line 963, in _show_all_users_tranches
+    for stock in stocks:
+NameError: name 'stocks' is not defined
+AUTH: About to call log_login for user
+DEBUG: log_login called for username: user
+DEBUG: Checking for gsheet_credentials in secrets...
+DEBUG: Found gsheet_credentials
+DEBUG: Creating credentials...
+DEBUG: Authorizing client...
+DEBUG: Sheet URL: https://docs.google.com/spreadsheets/d/120ZT_vHNgAPS1L2VshL-DDBJp5462yl3W_-9W9TKTrI/edit?gid=0#gid=0
+DEBUG: Opening sheet...
+DEBUG: Login tracking enabled successfully!
+DEBUG: Login tracking enabled: True
+DEBUG: Logging login for user at 2025-12-03 15:11:34
+DEBUG: Appending row to sheet: [2025-12-03 15:11:34, user, Unknown]
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-26 00:00:00 -> 2025-07-06 00:00:00)
+DEBUG: Successfully logged login to sheet!
+AUTH: Finished calling log_login for user
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-26 00:00:00 -> 2025-10-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-27 00:00:00 -> 2025-11-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2021-12-27 00:00:00 -> 2022-01-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-08-27 00:00:00 -> 2024-09-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-05-27 00:00:00 -> 2025-06-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2021-12-27 00:00:00 -> 2022-01-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-11-28 15:11:55.874720 -> 2024-12-08 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-12-28 15:11:55.874720 -> 2025-01-07 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-01-27 15:11:55.874720 -> 2025-02-06 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-02-26 15:11:55.874720 -> 2025-03-08 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-03-28 15:11:55.874720 -> 2025-04-07 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-04-27 15:11:55.874720 -> 2025-05-07 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-05-27 15:11:55.874720 -> 2025-06-06 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-26 15:11:55.874720 -> 2025-07-06 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-07-26 15:11:55.874720 -> 2025-08-05 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-08-25 15:11:55.874720 -> 2025-09-04 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-24 15:11:55.874720 -> 2025-10-04 15:11:55.874720)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-24 15:11:55.874720 -> 2025-11-03 15:11:55.874720)
+AUTH: About to call log_login for user
+DEBUG: log_login called for username: user
+DEBUG: Login tracking enabled: True
+DEBUG: Logging login for user at 2025-12-11 13:23:44
+DEBUG: Appending row to sheet: [2025-12-11 13:23:44, user, Unknown]
+DEBUG: Successfully logged login to sheet!
+AUTH: Finished calling log_login for user
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-26 00:00:00 -> 2025-07-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-26 00:00:00 -> 2025-10-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-27 00:00:00 -> 2025-11-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-11-26 00:00:00 -> 2025-12-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2021-12-27 00:00:00 -> 2022-01-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-08-27 00:00:00 -> 2024-09-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-05-27 00:00:00 -> 2025-06-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2021-12-27 00:00:00 -> 2022-01-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-12-06 13:24:21.045096 -> 2024-12-16 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-01-05 13:24:21.045096 -> 2025-01-15 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-02-04 13:24:21.045096 -> 2025-02-14 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-03-06 13:24:21.045096 -> 2025-03-16 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-04-05 13:24:21.045096 -> 2025-04-15 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-05-05 13:24:21.045096 -> 2025-05-15 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-04 13:24:21.045096 -> 2025-06-14 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-07-04 13:24:21.045096 -> 2025-07-14 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-08-03 13:24:21.045096 -> 2025-08-13 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-02 13:24:21.045096 -> 2025-09-12 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-02 13:24:21.045096 -> 2025-10-12 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-11-01 13:24:21.045096 -> 2025-11-11 13:24:21.045096)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-26 00:00:00 -> 2025-07-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-26 00:00:00 -> 2025-10-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-27 00:00:00 -> 2025-11-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-11-26 00:00:00 -> 2025-12-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2021-12-27 00:00:00 -> 2022-01-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-08-27 00:00:00 -> 2024-09-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-05-27 00:00:00 -> 2025-06-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2021-12-27 00:00:00 -> 2022-01-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-12-06 15:36:12.216019 -> 2024-12-16 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-01-05 15:36:12.216019 -> 2025-01-15 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-02-04 15:36:12.216019 -> 2025-02-14 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-03-06 15:36:12.216019 -> 2025-03-16 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-04-05 15:36:12.216019 -> 2025-04-15 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-05-05 15:36:12.216019 -> 2025-05-15 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-04 15:36:12.216019 -> 2025-06-14 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-07-04 15:36:12.216019 -> 2025-07-14 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-08-03 15:36:12.216019 -> 2025-08-13 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-02 15:36:12.216019 -> 2025-09-12 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-02 15:36:12.216019 -> 2025-10-12 15:36:12.216019)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-11-01 15:36:12.216019 -> 2025-11-11 15:36:12.216019)
+AUTH: About to call log_login for foehr
+DEBUG: log_login called for username: foehr
+DEBUG: Login tracking enabled: True
+DEBUG: Logging login for foehr at 2025-12-15 20:45:13
+DEBUG: Appending row to sheet: [2025-12-15 20:45:13, foehr, Unknown]
+DEBUG: Successfully logged login to sheet!
+AUTH: Finished calling log_login for foehr
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-26 00:00:00 -> 2025-07-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-26 00:00:00 -> 2025-10-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-27 00:00:00 -> 2025-11-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-11-26 00:00:00 -> 2025-12-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-12-10 20:45:30.210007 -> 2024-12-20 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-01-09 20:45:30.210007 -> 2025-01-19 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-02-08 20:45:30.210007 -> 2025-02-18 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-03-10 20:45:30.210007 -> 2025-03-20 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-04-09 20:45:30.210007 -> 2025-04-19 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-05-09 20:45:30.210007 -> 2025-05-19 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-08 20:45:30.210007 -> 2025-06-18 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-07-08 20:45:30.210007 -> 2025-07-18 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-08-07 20:45:30.210007 -> 2025-08-17 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-06 20:45:30.210007 -> 2025-09-16 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-06 20:45:30.210007 -> 2025-10-16 20:45:30.210007)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-11-05 20:45:30.210007 -> 2025-11-15 20:45:30.210007)
+AUTH: About to call log_login for annika
+DEBUG: log_login called for username: annika
+DEBUG: Login tracking enabled: True
+DEBUG: Logging login for annika at 2025-12-15 20:48:05
+DEBUG: Appending row to sheet: [2025-12-15 20:48:05, annika, Unknown]
+DEBUG: Successfully logged login to sheet!
+AUTH: Finished calling log_login for annika
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-08-27 00:00:00 -> 2024-09-06 00:00:00)
+$UQ2B.F: possibly delisted; no price data found  (1d 2024-12-10 20:48:11.071305 -> 2024-12-20 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-01-09 20:48:11.071305 -> 2025-01-19 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-02-08 20:48:11.071305 -> 2025-02-18 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-03-10 20:48:11.071305 -> 2025-03-20 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-04-09 20:48:11.071305 -> 2025-04-19 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-05-09 20:48:11.071305 -> 2025-05-19 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-06-08 20:48:11.071305 -> 2025-06-18 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-07-08 20:48:11.071305 -> 2025-07-18 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-08-07 20:48:11.071305 -> 2025-08-17 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-09-06 20:48:11.071305 -> 2025-09-16 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-10-06 20:48:11.071305 -> 2025-10-16 20:48:11.071305)
+$UQ2B.F: possibly delisted; no price data found  (1d 2025-11-05 20:48:11.071305 -> 2025-11-15 20:48:11.071305)

@@ -2,6 +2,7 @@
 Portfolio dashboard for displaying user's portfolio overview
 """
 
+import os
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -10,10 +11,26 @@ from typing import List, Dict
 from price_fetcher import PriceFetcher
 from config import STOCKS
 from translations import get_language, get_text, format_currency, format_currency_change
+from report_generator import AnnualReportGenerator
+
+# Pre-generated Word reports mapped to users
+DOCX_REPORTS = {
+    "kremer": {
+        "path": "Annual Performance Report DE.docx",
+        "label": "Mama&Papa",
+        "download_name": "kremer_annual_report_2025.docx",
+    },
+    "foehr": {
+        "path": "Annual Performance Report copy.docx",
+        "label": "Sherry&Christian",
+        "download_name": "foehr_annual_report_2025.docx",
+    },
+}
 
 class PortfolioDashboard:
     def __init__(self, price_fetcher: PriceFetcher):
         self.price_fetcher = price_fetcher
+        self.report_generator = AnnualReportGenerator(price_fetcher)
     
     def show_dashboard(self, user: Dict, stocks_with_prices: List[Dict], failed_symbols: List[str]):
         """Display the main portfolio dashboard"""
@@ -126,6 +143,11 @@ class PortfolioDashboard:
 
         st.markdown("---")
 
+        # Annual PDF report for 2025
+        self.show_annual_report(user, stocks_with_prices, lang)
+
+        st.markdown("---")
+
         # Show user overview if this is the "user" account
         if user['username'] == 'user':
             self.show_all_users_overview(stocks_with_prices, lang)
@@ -155,6 +177,54 @@ class PortfolioDashboard:
         
         # Detailed holdings table
         self.show_holdings_table(stocks_with_prices, user, lang)
+
+    def show_annual_report(self, user: Dict, stocks_with_prices: List[Dict], lang: str):
+        """Allow the user to generate a 2025 annual PDF report."""
+        st.subheader(get_text('annual_report', lang))
+        st.markdown(get_text('annual_report_desc', lang))
+
+        # Offer pre-generated Word doc if available for this user; otherwise skip PDF generation
+        docx_info = DOCX_REPORTS.get(user.get('username'))
+        if docx_info:
+            path = docx_info["path"]
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    doc_bytes = f.read()
+                st.download_button(
+                    label=f"{get_text('download_report', lang)} (.docx – {docx_info['label']})",
+                    data=doc_bytes,
+                    file_name=docx_info.get("download_name", os.path.basename(path)),
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                )
+                return
+            else:
+                st.warning(f"Report file not found: {path}")
+                return
+        else:
+            st.info(get_text('annual_report_desc', lang))
+            st.warning("Annual report download is not available for this account yet.")
+            return
+
+        if st.button(get_text('generate_annual_report', lang), use_container_width=True):
+            with st.spinner(get_text('annual_report_building', lang)):
+                try:
+                    pdf_bytes, _ = self.report_generator.generate_user_report(
+                        user, stocks_with_prices, year=2025
+                    )
+                except Exception as exc:  # pragma: no cover - defensive UI path
+                    st.error(get_text('annual_report_error', lang))
+                    st.exception(exc)
+                    return
+
+            st.success(get_text('annual_report_ready', lang))
+            st.download_button(
+                label=get_text('download_report', lang),
+                data=pdf_bytes,
+                file_name=f"{user['username']}_portfolio_report_2025.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
     
     def show_all_users_overview(self, stocks_with_prices: List[Dict], lang: str):
         """Show overview of all users' portfolio values (only for 'user' account)"""
@@ -781,41 +851,179 @@ class PortfolioDashboard:
                 )
                 fig.update_traces(textposition='inside', textinfo='percent+label')
                 st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            st.subheader(get_text('industry_breakdown', lang))
-            
-            # Group by industry
-            industry_data = {}
-            for stock in stocks:
-                industry = stock.get('industry', 'Other')
-                if industry is None:
-                    industry = 'Cash'
-                value = self.price_fetcher.get_stock_value(stock) * user['portfolio_percentage']
-                
-                if industry in industry_data:
-                    industry_data[industry] += value
-                else:
-                    industry_data[industry] = value
-            
-            industry_df = pd.DataFrame([
-                {'Industry': k, 'Value': v} 
-                for k, v in industry_data.items() 
-                if v > 0
-            ])
-            
-            if not industry_df.empty:
-                # Sort by value descending (highest to lowest)
-                industry_df = industry_df.sort_values('Value', ascending=False)
-                
-                fig = px.bar(
-                    industry_df, 
-                    x='Industry', 
-                    y='Value',
-                    title=get_text('holdings_by_industry', lang)
+    
+    def _show_all_users_tranches(self, stocks_with_prices: List[Dict], lang: str):
+        """Show tranche-level performance for every user in a single table (admin overview)"""
+        from datetime import datetime
+        from config import USERS
+
+        total_portfolio_value = self.price_fetcher.get_portfolio_value(stocks_with_prices)
+        today = datetime.now()
+
+        tranche_rows = []
+        total_invested = 0
+        total_current_value = 0
+
+        for user_config in USERS:
+            # Skip the aggregate "user" entry to focus on actual participants
+            if user_config['username'] == 'user':
+                continue
+
+            user_tranches = []
+
+            if 'payments' in user_config:
+                for payment in user_config['payments']:
+                    user_tranches.append({
+                        'date': payment['date'],
+                        'amount': payment['amount'],
+                        'type': payment.get('type', get_text('additional_payment', lang))
+                    })
+            elif 'paid_date' in user_config:
+                user_tranches.append({
+                    'date': user_config['paid_date'],
+                    'amount': user_config.get('initial_investment', 0),
+                    'type': get_text('initial_investment', lang)
+                })
+
+            for tranche in user_tranches:
+                investment_date = datetime.strptime(tranche['date'], '%Y-%m-%d')
+                amount_invested = tranche['amount']
+                total_invested += amount_invested
+
+                days_invested = (today - investment_date).days
+                years_invested = days_invested / 365.25
+
+                portfolio_value_at_date = self._get_portfolio_value_at_date(investment_date, stocks_with_prices)
+                percentage_bought = amount_invested / portfolio_value_at_date if portfolio_value_at_date > 0 else 0
+                tranche_current_value = percentage_bought * total_portfolio_value
+                total_current_value += tranche_current_value
+
+                return_amount = tranche_current_value - amount_invested
+                return_pct = (return_amount / amount_invested * 100) if amount_invested > 0 else 0
+                annualized_return = (((tranche_current_value / amount_invested) ** (1 / years_invested)) - 1) * 100 if years_invested > 0 and amount_invested > 0 else 0
+
+                tranche_rows.append({
+                    get_text('username', lang): user_config['username'].title(),
+                    get_text('investment_date', lang): tranche['date'],
+                    get_text('amount_invested', lang): amount_invested,
+                    get_text('current_value', lang): tranche_current_value,
+                    get_text('return_amount', lang): return_amount,
+                    get_text('return_pct', lang): return_pct,
+                    get_text('annualized_return', lang): annualized_return,
+                    get_text('years_invested', lang): years_invested,
+                    'Type': tranche['type'],
+                    '_sort_key': (user_config['username'], investment_date)
+                })
+
+        if not tranche_rows:
+            st.info("No payment information available")
+            return
+
+        # Sort by user then date
+        tranche_rows.sort(key=lambda x: x['_sort_key'])
+        for row in tranche_rows:
+            del row['_sort_key']
+
+        df = pd.DataFrame(tranche_rows)
+
+        # Format for display
+        formatted_df = df.copy()
+        username_col = get_text('username', lang)
+        amount_col = get_text('amount_invested', lang)
+        current_val_col = get_text('current_value', lang)
+        return_amt_col = get_text('return_amount', lang)
+        return_pct_col = get_text('return_pct', lang)
+        ann_return_col = get_text('annualized_return', lang)
+        years_col = get_text('years_invested', lang)
+
+        formatted_df[username_col] = formatted_df[username_col].apply(lambda x: x.title())
+        formatted_df[amount_col] = formatted_df[amount_col].apply(lambda x: format_currency(x, lang))
+        formatted_df[current_val_col] = formatted_df[current_val_col].apply(lambda x: format_currency(x, lang))
+        formatted_df[return_amt_col] = formatted_df[return_amt_col].apply(lambda x: format_currency_change(x, lang))
+        formatted_df[return_pct_col] = formatted_df[return_pct_col].apply(lambda x: f"{x:+.2f}%")
+        formatted_df[ann_return_col] = formatted_df[ann_return_col].apply(lambda x: f"{x:+.2f}%")
+        formatted_df[years_col] = formatted_df[years_col].apply(lambda x: f"{x:.2f}")
+
+        display_df = formatted_df
+
+        def color_returns(val):
+            if '+' in str(val):
+                return 'color: green'
+            elif '-' in str(val):
+                return 'color: red'
+            else:
+                return 'color: gray'
+
+        styled_df = display_df.style.map(
+            color_returns,
+            subset=[return_amt_col, return_pct_col, ann_return_col]
+        )
+
+        st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+        # Verification section - only show if verification fails
+        actual_current_value = total_portfolio_value
+        difference = total_current_value - actual_current_value
+
+        tolerance = actual_current_value * 0.001
+        is_verified = abs(difference) <= tolerance
+
+        if not is_verified:
+            st.markdown("---")
+            st.subheader(get_text('total_verification', lang))
+
+            verification_cols = st.columns(4)
+
+            with verification_cols[0]:
+                st.metric(
+                    get_text('sum_of_tranches', lang),
+                    format_currency(total_current_value, lang)
                 )
-                fig.update_layout(xaxis_tickangle=-45)
-                st.plotly_chart(fig, use_container_width=True)
+
+            with verification_cols[1]:
+                st.metric(
+                    get_text('actual_portfolio_value', lang),
+                    format_currency(actual_current_value, lang)
+                )
+
+            with verification_cols[2]:
+                st.metric(
+                    get_text('difference', lang),
+                    format_currency(difference, lang),
+                    delta=None
+                )
+
+            with verification_cols[3]:
+                st.error(get_text('verification_failed', lang))
+
+        # Show total returns breakdown across all users
+        st.markdown("---")
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric(
+                get_text('amount_invested', lang),
+                format_currency(total_invested, lang)
+            )
+
+        with col2:
+            total_profit = total_current_value - total_invested
+            st.metric(
+                get_text('return_amount', lang) + " (Total)",
+                format_currency_change(total_profit, lang),
+                delta=f"{(total_profit / total_invested * 100):+.2f}%" if total_invested > 0 else None
+            )
+
+        with col3:
+            if total_invested > 0:
+                weighted_return = sum([
+                    (row[get_text('amount_invested', lang)] / total_invested) * row[get_text('annualized_return', lang)]
+                    for row in tranche_rows
+                ])
+                st.metric(
+                    get_text('annualized_return', lang) + " (Avg)",
+                    f"{weighted_return:+.2f}%"
+                )
     
     def show_holdings_table(self, stocks: List[Dict], user: Dict, lang: str):
         """Show detailed holdings table"""
@@ -902,7 +1110,16 @@ class PortfolioDashboard:
         from datetime import datetime
         from config import USERS
 
+        # Only show tranche details for the aggregate user and foehr
+        if user.get('username') not in ('user', 'foehr'):
+            return
+
         st.subheader(get_text('investment_tranches', lang))
+
+        # In the aggregated "user" account, show every user's tranches instead of a single total
+        if user['username'] == 'user':
+            self._show_all_users_tranches(stocks_with_prices, lang)
+            return
 
         # Get current portfolio value
         total_portfolio_value = self.price_fetcher.get_portfolio_value(stocks_with_prices)
@@ -1044,8 +1261,8 @@ class PortfolioDashboard:
         tolerance = actual_current_value * 0.001
         is_verified = abs(difference) <= tolerance
 
-        # Only display verification section if it fails
-        if not is_verified:
+        # Only display verification section if it fails and the user is allowed to see it
+        if not is_verified and user.get('username') in ('user', 'foehr'):
             st.markdown("---")
             st.subheader(get_text('total_verification', lang))
 

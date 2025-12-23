@@ -11,6 +11,7 @@ A Streamlit-based web application for viewing and managing a shared stock portfo
 - **Detailed Holdings**: Sortable table with all stock information
 - **Price Change Tracking**: Shows price changes from default values
 - **Industry Analysis**: Portfolio breakdown by industry sectors
+- **Annual PDF Report**: One-click 2025 report with benchmarks, monthly returns, and inflation-adjusted performance
 
 ## Users and Access
 
