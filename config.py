@@ -32,8 +32,8 @@ USERS = [
     {
         "username": "annika",
         "password": "anakin",
-        "portfolio_percentage": 0.0033834,
-        "initial_investment": 920,
+        "portfolio_percentage": 0.00363834,
+        "initial_investment": 1020,
         "paid_date": "2024-09-01"
     },
     {
