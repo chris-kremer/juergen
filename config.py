@@ -13,13 +13,14 @@ USERS = [
     {
         "username": "foehr",
         "password": "foehr1",
-        "portfolio_percentage": 0.06321,
+        "portfolio_percentage": 0.0644741,
         "initial_investment": 20000,
         "payments": [
             {"amount": 20000, "date": "2025-07-01"},
             {"amount": 300, "date": "2025-10-01"},
             {"amount": 500, "date": "2025-11-01"},
             {"amount": 500, "date": "2025-12-01"}
+            {"amount": 500, "date": "2026-01-01"}
         ]
     },
     {
