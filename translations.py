@@ -84,12 +84,12 @@ TRANSLATIONS = {
         'average_return': 'Average Return',
         'no_yearly_data_available': 'No yearly data available for stocks',
         'annual_report': '2025 Annual Report',
-        'annual_report_desc': 'Generate a PDF with 2025 performance, benchmarks, monthly returns, and inflation-adjusted stats.',
-        'generate_annual_report': 'Create PDF Report',
+        'annual_report_desc': 'Download your 2025 performance report with benchmarks, monthly returns, and inflation-adjusted stats.',
+        'generate_annual_report': 'Create Report',
         'annual_report_building': 'Building your 2025 report...',
         'annual_report_ready': 'Report ready! Download below.',
         'annual_report_error': 'Could not generate the report. Please try again.',
-        'download_report': 'Download PDF',
+        'download_report': 'Download Report',
 
         # Investment Tranches
         'investment_tranches': 'Investment Tranche Performance',
@@ -215,12 +215,12 @@ TRANSLATIONS = {
         'average_return': 'Durchschnittliche Rendite',
         'no_yearly_data_available': 'Keine Jahresdaten für Aktien verfügbar',
         'annual_report': 'Jahresbericht 2025',
-        'annual_report_desc': 'PDF mit 2025-Performance, Benchmarks, Monatsrenditen und inflationsbereinigten Kennzahlen erstellen.',
-        'generate_annual_report': 'PDF-Bericht erstellen',
+        'annual_report_desc': 'Laden Sie Ihren 2025-Leistungsbericht mit Benchmarks, Monatsrenditen und inflationsbereinigten Kennzahlen herunter.',
+        'generate_annual_report': 'Bericht erstellen',
         'annual_report_building': 'Bericht für 2025 wird erstellt...',
         'annual_report_ready': 'Bericht fertig! Jetzt herunterladen.',
         'annual_report_error': 'Bericht konnte nicht erstellt werden. Bitte erneut versuchen.',
-        'download_report': 'PDF herunterladen',
+        'download_report': 'Bericht herunterladen',
 
         # Investment Tranches
         'investment_tranches': 'Investitions-Tranchen Performance',

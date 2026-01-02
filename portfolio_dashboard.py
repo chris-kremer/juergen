@@ -1130,8 +1130,8 @@ class PortfolioDashboard:
         from datetime import datetime
         from config import USERS
 
-        # Only show tranche details for the aggregate user and foehr
-        if user.get('username') not in ('user', 'foehr'):
+        # Only show tranche details for the aggregate user and foehr and annika
+        if user.get('username') not in ('user', 'foehr', 'annika'):
             return
 
         st.subheader(get_text('investment_tranches', lang))

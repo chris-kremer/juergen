@@ -18,8 +18,9 @@ USERS = [
         "payments": [
             {"amount": 20000, "date": "2025-07-01"},
             {"amount": 300, "date": "2025-10-01"},
-            {"amount": 500, "date": "2025-11-01"},
-            {"amount": 500, "date": "2025-12-01"}
+            {"amount": 300, "date": "2025-11-01"},
+            {"amount": 200, "date": "2025-11-01"},
+            {"amount": 500, "date": "2025-12-01"},
             {"amount": 500, "date": "2026-01-01"}
         ]
     },
@@ -34,8 +35,26 @@ USERS = [
         "username": "annika",
         "password": "anakin",
         "portfolio_percentage": 0.00363834,
-        "initial_investment": 1020,
-        "paid_date": "2024-09-01"
+        "initial_investment": 200,
+        "payments": [
+            {"amount": 100, "date": "2024-09-01"},
+            {"amount": 50, "date": "2024-10-01"},
+            {"amount": 50, "date": "2024-11-01"},
+            {"amount": 50, "date": "2024-12-01"},
+            {"amount": 100, "date": "2025-01-01"},
+            {"amount": 50, "date": "2025-02-01"},
+            {"amount": 50, "date": "2025-03-01"},
+            {"amount": 50, "date": "2025-04-01"},
+            {"amount": 50, "date": "2025-05-01"},
+            {"amount": 50, "date": "2025-06-01"},
+            {"amount": 50, "date": "2025-07-01"},
+            {"amount": 70, "date": "2025-08-01"},
+            {"amount": 50, "date": "2025-09-01"},
+            {"amount": 50, "date": "2025-10-01"},
+            {"amount": 50, "date": "2025-11-01"},
+            {"amount": 50, "date": "2025-12-01"},
+            {"amount": 100, "date": "2026-01-01"}
+        ]
     },
     {
         "username": "juergen",
