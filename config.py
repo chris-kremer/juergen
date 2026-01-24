@@ -13,7 +13,7 @@ USERS = [
     {
         "username": "foehr",
         "password": "foehr1",
-        "portfolio_percentage": 0.0644741,
+        "portfolio_percentage": 0.05742484,
         "initial_investment": 20000,
         "payments": [
             {"amount": 20000, "date": "2025-07-01"},
@@ -27,14 +27,14 @@ USERS = [
     {
         "username": "kremer",
         "password": "kremer1",
-        "portfolio_percentage": 0.60447851,
+        "portfolio_percentage": 0.53838802,
         "initial_investment": 130000,
         "paid_date": "2022-01-01"
     },
     {
         "username": "annika",
         "password": "anakin",
-        "portfolio_percentage": 0.00363834,
+        "portfolio_percentage": 0.00324054,
         "initial_investment": 200,
         "payments": [
             {"amount": 100, "date": "2024-09-01"},
@@ -59,14 +59,17 @@ USERS = [
     {
         "username": "juergen",
         "password": "juergen1",
-        "portfolio_percentage": 0.14746305,
+        "portfolio_percentage": 0.24434178,
         "initial_investment": 50000,
-        "paid_date": "2025-06-01"
+        "payments": [
+            {"amount": 50000, "date": "2025-06-01"},
+            {"amount": 50000, "date": "2026-01-24"}
+        ]
     },
     {
         "username": "christian",
         "password": "chris1",
-        "portfolio_percentage": 0.17582904,
+        "portfolio_percentage": 0.15660482,
         "initial_investment": 30000,
         "paid_date": "2022-01-01"
     }
@@ -89,5 +92,5 @@ STOCKS = [
     {"symbol": "GS", "quantity": 8.0, "price": 608.10, "name": "Goldman Sachs", "industry": "Bank"},
     {"symbol": "LUV", "quantity": 80.0, "price": 28.79, "name": "Southwest (Airline)", "industry": "Airlines"},
     {"symbol": "UAL", "quantity": 50.0, "price": 68.92, "name": "United (Airline)", "industry": "Airlines"},
-    {"symbol": "CASH", "quantity": 81358.0, "price": 1.00, "name": "Cash", "industry": None}
+    {"symbol": "CASH", "quantity": 131358.0, "price": 1.00, "name": "Cash", "industry": None}
 ]

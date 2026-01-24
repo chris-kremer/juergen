@@ -1,14 +1,26 @@
 {
   "foehr": {
-    "previous_login": "2025-08-16T18:10:29.893663",
+    "previous_login": "2025-08-16T18:11:12.017929",
     "previous_portfolio_value": 17962.5287307588,
-    "last_login": "2025-08-16T18:11:12.017929",
-    "last_portfolio_value": 17962.5287307588
+    "last_login": "2026-01-24T10:08:22.594551",
+    "last_portfolio_value": 24445.56892862444
   },
   "user": {
+    "previous_login": "2025-08-16T18:26:16.474521",
+    "previous_portfolio_value": 362084.77157592773,
+    "last_login": "2026-01-24T10:13:30.713226",
+    "last_portfolio_value": 446626.48057250975
+  },
+  "juergen": {
+    "previous_login": "2026-01-24T10:07:27.048203",
+    "previous_portfolio_value": 124945.23627381028,
+    "last_login": "2026-01-24T10:11:01.361384",
+    "last_portfolio_value": 124945.23627381028
+  },
+  "kremer": {
     "previous_login": null,
     "previous_portfolio_value": null,
-    "last_login": "2025-08-16T18:26:16.474521",
-    "last_portfolio_value": 362084.77157592773
+    "last_login": "2026-01-24T10:07:57.726439",
+    "last_portfolio_value": 229190.02744412964
   }
 }
