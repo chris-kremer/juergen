@@ -13,7 +13,7 @@ USERS = [
     {
         "username": "foehr",
         "password": "foehr1",
-        "portfolio_percentage": 0.05742484,
+        "portfolio_percentage": 0.07246599,
         "initial_investment": 20000,
         "payments": [
             {"amount": 20000, "date": "2025-07-01"},
@@ -21,20 +21,24 @@ USERS = [
             {"amount": 300, "date": "2025-11-01"},
             {"amount": 200, "date": "2025-11-01"},
             {"amount": 500, "date": "2025-12-01"},
-            {"amount": 500, "date": "2026-01-01"}
+            {"amount": 500, "date": "2026-01-01"},
+            {"amount": 500, "date": "2026-02-01"},
+            {"amount": 500, "date": "2026-02-02"},
+            {"amount": 5000, "date": "2026-03-02"},
+            {"amount": 500, "date": "2026-04-01"}
         ]
     },
     {
         "username": "kremer",
         "password": "kremer1",
-        "portfolio_percentage": 0.53838802,
+        "portfolio_percentage": 0.53848802,
         "initial_investment": 130000,
         "paid_date": "2022-01-01"
     },
     {
         "username": "annika",
         "password": "anakin",
-        "portfolio_percentage": 0.00324054,
+        "portfolio_percentage": 0.003682054,
         "initial_investment": 200,
         "payments": [
             {"amount": 100, "date": "2024-09-01"},
@@ -53,7 +57,11 @@ USERS = [
             {"amount": 50, "date": "2025-10-01"},
             {"amount": 50, "date": "2025-11-01"},
             {"amount": 50, "date": "2025-12-01"},
-            {"amount": 100, "date": "2026-01-01"}
+            {"amount": 100, "date": "2026-01-01"},
+            {"amount": 20, "date": "2026-01-27"},
+            {"amount": 150, "date": "2026-02-05"},
+            {"amount": 50, "date": "2026-03-01"},
+            {"amount": 100, "date": "2026-04-01"}
         ]
     },
     {
@@ -69,9 +77,14 @@ USERS = [
     {
         "username": "christian",
         "password": "chris1",
-        "portfolio_percentage": 0.15660482,
+        "portfolio_percentage": 0.14266367,
         "initial_investment": 30000,
-        "paid_date": "2022-01-01"
+        "payments": [
+            {"amount": 30000, "date": "2022-01-01", "type": "Initial investment"},
+            {"amount": -500, "date": "2026-02-02", "type": "Share sale to Foehr"},
+            {"amount": -5000, "date": "2026-03-02", "type": "Share sale to Foehr"},
+            {"amount": -500, "date": "2026-04-01", "type": "Share sale to Foehr"}
+        ]
     }
 ]
 
@@ -79,7 +92,6 @@ STOCKS = [
     {"symbol": "UQ2B.F", "quantity": 5.4, "price": 365.00, "name": "Index Fund", "industry": "Index"},
     {"symbol": "BP", "quantity": 143.0, "price": 4.41, "name": "BP", "industry": "Oil & Gas"},
     {"symbol": "C", "quantity": 282.0, "price": 73.64, "name": "Citigroup", "industry": "Bank"},
-    {"symbol": "1COV.DE", "quantity": 100.0, "price": 60.54, "name": "Covestro", "industry": "Chemicals"},
     {"symbol": "HEI.DE", "quantity": 185.0, "price": 192.25, "name": "Heidelberg Materials", "industry": "Materials"},
     {"symbol": "EXV1.DE", "quantity": 284.0, "price": 27.83, "name": "Index Fund", "industry": "European Banks"},
     {"symbol": "URTH", "quantity": 493.0, "price": 100.48, "name": "Index Fund", "industry": "Index"},
@@ -92,5 +104,5 @@ STOCKS = [
     {"symbol": "GS", "quantity": 8.0, "price": 608.10, "name": "Goldman Sachs", "industry": "Bank"},
     {"symbol": "LUV", "quantity": 80.0, "price": 28.79, "name": "Southwest (Airline)", "industry": "Airlines"},
     {"symbol": "UAL", "quantity": 50.0, "price": 68.92, "name": "United (Airline)", "industry": "Airlines"},
-    {"symbol": "CASH", "quantity": 131358.0, "price": 1.00, "name": "Cash", "industry": None}
+    {"symbol": "CASH", "quantity": 137358.0, "price": 1.00, "name": "Cash", "industry": None}
 ]
