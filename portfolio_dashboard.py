@@ -7,14 +7,48 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 from typing import List, Dict
 from price_fetcher import PriceFetcher, fetch_yfinance_history
 from config import STOCKS
 from translations import get_language, get_text, format_currency, format_currency_change
 
+pio.templates.default = "plotly_white"
+px.defaults.template = "plotly_white"
+
 class PortfolioDashboard:
     def __init__(self, price_fetcher: PriceFetcher):
         self.price_fetcher = price_fetcher
+
+    def _plotly_chart(self, fig, **kwargs):
+        """Render Plotly charts with explicit light styling."""
+        fig.update_layout(
+            template="plotly_white",
+            paper_bgcolor="#ffffff",
+            plot_bgcolor="#ffffff",
+            font=dict(color="#182230"),
+            title_font=dict(color="#182230"),
+            legend=dict(
+                bgcolor="rgba(255,255,255,0.92)",
+                bordercolor="#e4e9f0",
+                borderwidth=1,
+                font=dict(color="#182230"),
+            ),
+            margin=dict(l=40, r=24, t=56, b=44),
+        )
+        fig.update_xaxes(
+            color="#475467",
+            gridcolor="#edf1f7",
+            zerolinecolor="#d0d5dd",
+            linecolor="#d0d5dd",
+        )
+        fig.update_yaxes(
+            color="#475467",
+            gridcolor="#edf1f7",
+            zerolinecolor="#d0d5dd",
+            linecolor="#d0d5dd",
+        )
+        st.plotly_chart(fig, use_container_width=True, theme=None, **kwargs)
 
     def _show_metric_grid(self, metrics: List[Dict]):
         """Render responsive metric cards without Streamlit column truncation."""
@@ -413,7 +447,7 @@ class PortfolioDashboard:
         fig.data[1].y = urth_values
         
         with chart_container.container():
-            st.plotly_chart(fig, use_container_width=True, key="historical_chart_final")
+            self._plotly_chart(fig, key="historical_chart_final")
         
         # Clear progress indicators
         progress_container.empty()
@@ -628,7 +662,7 @@ class PortfolioDashboard:
                 )
             )
 
-            st.plotly_chart(fig, use_container_width=True)
+            self._plotly_chart(fig)
 
             # Summary stats
             col1, col2, col3 = st.columns(3)
@@ -769,7 +803,7 @@ class PortfolioDashboard:
                     annotation_position="top right"
                 )
             
-            st.plotly_chart(fig, use_container_width=True)
+            self._plotly_chart(fig)
             
             # Summary stats
             winners = len([x for x in returns_data if x['Return (%)'] > 0])
@@ -817,7 +851,7 @@ class PortfolioDashboard:
                     title=get_text('holdings_distribution', lang)
                 )
                 fig.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig, use_container_width=True)
+                self._plotly_chart(fig)
     
     def _show_all_users_tranches(self, stocks_with_prices: List[Dict], lang: str):
         """Show tranche-level performance for every user in a single table (admin overview)"""
@@ -1315,7 +1349,7 @@ class PortfolioDashboard:
                     title=f"{get_text('current_value', lang)} by Tranche"
                 )
                 fig.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig, use_container_width=True)
+                self._plotly_chart(fig)
 
         with col2:
             # Bar chart of returns
@@ -1354,7 +1388,7 @@ class PortfolioDashboard:
                     height=400
                 )
 
-                st.plotly_chart(fig, use_container_width=True)
+                self._plotly_chart(fig)
 
     def _get_portfolio_value_at_date(self, date, current_stocks):
         """Get total portfolio value at a specific historical date"""
@@ -1505,7 +1539,7 @@ class PortfolioDashboard:
                 title=get_text('logins_by_user', lang)
             )
             fig.update_layout(xaxis_tickangle=-45, height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            self._plotly_chart(fig)
 
         with col2:
             # Line chart: Logins over time
@@ -1523,4 +1557,4 @@ class PortfolioDashboard:
                 markers=True
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            self._plotly_chart(fig)
