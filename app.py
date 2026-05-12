@@ -21,7 +21,7 @@ st.set_page_config(
     page_title="Portfolio Overview",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Custom CSS for a calmer dashboard presentation
