@@ -2,42 +2,50 @@
 Portfolio dashboard for displaying user's portfolio overview
 """
 
-import os
-import unicodedata
-from pathlib import Path
+from html import escape
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from typing import List, Dict
-from price_fetcher import PriceFetcher
+from price_fetcher import PriceFetcher, fetch_yfinance_history
 from config import STOCKS
 from translations import get_language, get_text, format_currency, format_currency_change
-from report_generator import AnnualReportGenerator
-
-# Pre-generated Word reports mapped to users
-DOCX_REPORTS = {
-    "kremer": {
-        "path": "Annual Performance Report DE Mama&Papa.docx",
-        "label": "Mama&Papa",
-        "download_name": "kremer_annual_report_2025.docx",
-    },
-    "foehr": {
-        "path": "Annual Performance Report DE Sherry & Christian.docx",
-        "label": "Sherry&Christian",
-        "download_name": "foehr_annual_report_2025.docx",
-    },
-    "juergen": {
-        "path": "Annual Performance Report DE Jürgen.docx",
-        "label": "Juergen",
-        "download_name": "juergen_annual_report_2025.docx",
-    },
-}
 
 class PortfolioDashboard:
     def __init__(self, price_fetcher: PriceFetcher):
         self.price_fetcher = price_fetcher
-        self.report_generator = AnnualReportGenerator(price_fetcher)
+
+    def _show_metric_grid(self, metrics: List[Dict]):
+        """Render responsive metric cards without Streamlit column truncation."""
+        cards = []
+        for metric in metrics:
+            label = escape(str(metric["label"]))
+            value = escape(str(metric["value"]))
+            delta = metric.get("delta")
+            delta_html = ""
+            if delta:
+                delta_text = str(delta)
+                if delta_text.strip().startswith("+") or delta_text.strip().startswith("↑"):
+                    delta_class = "positive"
+                    prefix = "↑ "
+                elif delta_text.strip().startswith("-") or delta_text.strip().startswith("↓"):
+                    delta_class = "negative"
+                    prefix = "↓ "
+                else:
+                    delta_class = "neutral"
+                    prefix = ""
+                delta_html = f'<div class="metric-delta {delta_class}">{prefix}{escape(delta_text)}</div>'
+
+            cards.append(
+                f'<div class="metric-card">'
+                f'<div class="metric-label">{label}</div>'
+                f'<div class="metric-value">{value}</div>'
+                f'{delta_html}'
+                f'</div>'
+            )
+
+        st.markdown(f'<div class="metric-grid">{"".join(cards)}</div>', unsafe_allow_html=True)
     
     def show_dashboard(self, user: Dict, stocks_with_prices: List[Dict], failed_symbols: List[str]):
         """Display the main portfolio dashboard"""
@@ -93,65 +101,45 @@ class PortfolioDashboard:
                     'current_price': stock.get('current_price', stock['price'])
                 })
 
-        # Key metrics row
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
+        live_count = len([s for s in stocks_with_prices if s.get('price_source') == 'live'])
+        top_pct_stock = max(stock_changes, key=lambda x: x['daily_change_pct']) if stock_changes else None
+        top_value_stock = max(stock_changes, key=lambda x: x['daily_change_value']) if stock_changes else None
 
-        with col1:
-            st.metric(
-                label=get_text('your_portfolio_value', lang),
-                value=format_currency(user_portfolio_value, lang),
-                delta=None
-            )
-
-        with col2:
-            st.metric(
-                label=get_text('total_return', lang),
-                value=format_currency_change(total_return_amount, lang),
-                delta=f"{total_return_percentage:+.1f}%" if total_return_percentage != 0 else None
-            )
-
-        with col3:
-            st.metric(
-                label=get_text('daily_change', lang),
-                value=format_currency_change(total_daily_change, lang),
-                delta=f"{daily_percentage:+.2f}%" if daily_percentage != 0 else None
-            )
-
-        with col4:
-            live_count = len([s for s in stocks_with_prices if s.get('price_source') == 'live'])
-            st.metric(
-                label=get_text('live_prices', lang),
-                value=f"{live_count}/{len(stocks_with_prices)-1}",  # -1 for cash
-                delta=None
-            )
-
-        with col5:
-            if stock_changes:
-                top_pct_stock = max(stock_changes, key=lambda x: x['daily_change_pct'])
-                st.metric(
-                    label=get_text('top_daily_pct', lang),
-                    value=top_pct_stock['name'],
-                    delta=f"{top_pct_stock['daily_change_pct']:+.2f}%"
-                )
-
-        with col6:
-            if stock_changes:
-                top_value_stock = max(stock_changes, key=lambda x: x['daily_change_value'])
-                st.metric(
-                    label=get_text('top_daily_value', lang),
-                    value=top_value_stock['name'],
-                    delta=format_currency_change(top_value_stock['daily_change_value'], lang)
-                )
+        self._show_metric_grid([
+            {
+                "label": get_text('your_portfolio_value', lang),
+                "value": format_currency(user_portfolio_value, lang),
+            },
+            {
+                "label": get_text('total_return', lang),
+                "value": format_currency_change(total_return_amount, lang),
+                "delta": f"{total_return_percentage:+.1f}%" if total_return_percentage != 0 else None,
+            },
+            {
+                "label": get_text('daily_change', lang),
+                "value": format_currency_change(total_daily_change, lang),
+                "delta": f"{daily_percentage:+.2f}%" if daily_percentage != 0 else None,
+            },
+            {
+                "label": get_text('live_prices', lang),
+                "value": f"{live_count}/{len(stocks_with_prices)-1}",  # -1 for cash
+            },
+            {
+                "label": get_text('top_daily_pct', lang),
+                "value": top_pct_stock['name'] if top_pct_stock else "N/A",
+                "delta": f"{top_pct_stock['daily_change_pct']:+.2f}%" if top_pct_stock else None,
+            },
+            {
+                "label": get_text('top_daily_value', lang),
+                "value": top_value_stock['name'] if top_value_stock else "N/A",
+                "delta": format_currency_change(top_value_stock['daily_change_value'], lang) if top_value_stock else None,
+            },
+        ])
 
         st.markdown("---")
 
         # Investment tranche performance (moved up for better visibility)
         self.show_investment_tranches(user, stocks_with_prices, lang)
-
-        st.markdown("---")
-
-        # Annual PDF report for 2025
-        self.show_annual_report(user, stocks_with_prices, lang)
 
         st.markdown("---")
 
@@ -185,67 +173,6 @@ class PortfolioDashboard:
         # Detailed holdings table
         self.show_holdings_table(stocks_with_prices, user, lang)
 
-    def show_annual_report(self, user: Dict, stocks_with_prices: List[Dict], lang: str):
-        """Allow the user to generate a 2025 annual PDF report."""
-        st.subheader(get_text('annual_report', lang))
-        st.markdown(get_text('annual_report_desc', lang))
-
-        # Offer pre-generated Word doc if available for this user; otherwise skip PDF generation
-        docx_info = DOCX_REPORTS.get(user.get('username'))
-        if docx_info:
-            target = Path(docx_info["path"])
-
-            def strip_accents(text: str) -> str:
-                return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
-
-            # Fallback: try to locate the file ignoring accents/casing
-            if not target.exists():
-                target_plain = strip_accents(target.name.lower().replace(".docx", ""))
-                for p in Path(".").glob("Annual Performance Report*.docx"):
-                    base_plain = strip_accents(p.name.lower().replace(".docx", ""))
-                    if target_plain in base_plain or user.get("username") in base_plain:
-                        target = p
-                        break
-
-            if target.exists():
-                with open(target, "rb") as f:
-                    doc_bytes = f.read()
-                st.download_button(
-                    label=f"{get_text('download_report', lang)} (.docx – {docx_info['label']})",
-                    data=doc_bytes,
-                    file_name=docx_info.get("download_name", target.name),
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    use_container_width=True,
-                )
-                return
-            else:
-                st.warning(f"Report file not found: {docx_info['path']}")
-                return
-        else:
-            st.info(get_text('annual_report_desc', lang))
-            st.warning("Annual report download is not available for this account yet.")
-            return
-
-        if st.button(get_text('generate_annual_report', lang), use_container_width=True):
-            with st.spinner(get_text('annual_report_building', lang)):
-                try:
-                    pdf_bytes, _ = self.report_generator.generate_user_report(
-                        user, stocks_with_prices, year=2025
-                    )
-                except Exception as exc:  # pragma: no cover - defensive UI path
-                    st.error(get_text('annual_report_error', lang))
-                    st.exception(exc)
-                    return
-
-            st.success(get_text('annual_report_ready', lang))
-            st.download_button(
-                label=get_text('download_report', lang),
-                data=pdf_bytes,
-                file_name=f"{user['username']}_portfolio_report_2025.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-            )
-    
     def show_all_users_overview(self, stocks_with_prices: List[Dict], lang: str):
         """Show overview of all users' portfolio values (only for 'user' account)"""
         from config import USERS
@@ -438,10 +365,6 @@ class PortfolioDashboard:
             )
         )
         
-        # Show initial chart
-        with chart_container.container():
-            st.plotly_chart(fig, use_container_width=True, key="historical_chart")
-        
         # Initialize arrays for progressive loading
         portfolio_values = [100] * len(sample_dates)
         urth_values = [100] * len(sample_dates)
@@ -453,7 +376,9 @@ class PortfolioDashboard:
             progress_bar = st.progress(0)
             status_text = st.empty()
         
-        # Load data for each date progressively
+        history_by_symbol = self._get_history_for_dates(sample_dates)
+
+        # Load data for each date
         for i, date in enumerate(sample_dates):
             # Format date display based on granularity
             if selected_granularity == 'daily':
@@ -466,7 +391,7 @@ class PortfolioDashboard:
             status_text.text(f"Loading data for {date_str}... ({i+1}/{total_points})")
             
             # Get real data for this date
-            portfolio_value, urth_value = self._get_single_date_data(date, user)
+            portfolio_value, urth_value = self._get_single_date_data(date, user, history_by_symbol)
             
             # Store the actual values
             if i == 0:
@@ -480,20 +405,8 @@ class PortfolioDashboard:
                 portfolio_values[i] = (portfolio_value / portfolio_base) * 100 if portfolio_base > 0 else 100
                 urth_values[i] = (urth_value / urth_base) * 100 if urth_base > 0 else 100
             
-            # Update chart
-            fig.data[0].y = portfolio_values[:i+1] + [100] * (len(sample_dates) - i - 1)
-            fig.data[1].y = urth_values[:i+1] + [100] * (len(sample_dates) - i - 1)
-            
-            # Update the chart display
-            with chart_container.container():
-                st.plotly_chart(fig, use_container_width=True, key=f"historical_chart_{i}")
-            
             # Update progress
             progress_bar.progress((i + 1) / total_points)
-            
-            # Small delay for visual effect
-            import time
-            time.sleep(0.3)
         
         # Final update with complete data
         fig.data[0].y = portfolio_values
@@ -535,10 +448,45 @@ class PortfolioDashboard:
                         delta_color="normal" if outperformance >= 0 else "inverse"
                     )
     
-    def _get_single_date_data(self, date, user):
+    def _get_history_for_dates(self, dates):
+        """Fetch each stock's historical window once for a whole chart."""
+        from datetime import timedelta
+
+        if not dates:
+            return {}
+
+        start_date = min(dates) - timedelta(days=5)
+        end_date = max(dates) + timedelta(days=5)
+
+        histories = {}
+        for stock in STOCKS:
+            if stock['symbol'] == 'CASH':
+                continue
+            histories[stock['symbol']] = fetch_yfinance_history(
+                stock['symbol'],
+                start=start_date,
+                end=end_date,
+            )
+        return histories
+
+    def _get_price_from_history_window(self, hist, start_date, end_date):
+        """Use the last close in a date window, matching the previous lookup behavior."""
+        if hist is None or hist.empty:
+            return None
+
+        window = hist.copy()
+        window.index = pd.to_datetime(window.index).tz_localize(None)
+        start_ts = pd.Timestamp(start_date).tz_localize(None)
+        end_ts = pd.Timestamp(end_date).tz_localize(None)
+        window = window[(window.index >= start_ts) & (window.index < end_ts)]
+        if window.empty:
+            return None
+
+        return float(window['Close'].iloc[-1])
+
+    def _get_single_date_data(self, date, user, history_by_symbol=None):
         """Get portfolio and URTH values for a single date"""
         try:
-            import yfinance as yf
             from datetime import timedelta
             
             total_portfolio_value = 0
@@ -551,15 +499,16 @@ class PortfolioDashboard:
                     continue
                 
                 try:
-                    ticker = yf.Ticker(stock['symbol'])
-                    # Get data around this date
-                    hist = ticker.history(start=date - timedelta(days=5), end=date + timedelta(days=5))
-                    
-                    if not hist.empty:
-                        # Use the closest available price
-                        price = float(hist['Close'].iloc[-1])
+                    start_date = date - timedelta(days=5)
+                    end_date = date + timedelta(days=5)
+
+                    if history_by_symbol is not None:
+                        hist = history_by_symbol.get(stock['symbol'])
                     else:
-                        # Fallback to default price
+                        hist = fetch_yfinance_history(stock['symbol'], start=start_date, end=end_date)
+
+                    price = self._get_price_from_history_window(hist, start_date, end_date)
+                    if price is None:
                         price = stock['price']
                     
                     if stock['symbol'] == 'URTH':
@@ -618,9 +567,7 @@ class PortfolioDashboard:
             progress_bar.progress((idx + 1) / total_stocks)
 
             try:
-                import yfinance as yf
-                ticker = yf.Ticker(stock['symbol'])
-                hist = ticker.history(start=start_date, end=end_date)
+                hist = fetch_yfinance_history(stock['symbol'], start=start_date, end=end_date)
 
                 if not hist.empty and len(hist) > 1:
                     # Normalize to percentage change from start
@@ -1412,7 +1359,6 @@ class PortfolioDashboard:
     def _get_portfolio_value_at_date(self, date, current_stocks):
         """Get total portfolio value at a specific historical date"""
         from datetime import timedelta
-        import yfinance as yf
 
         total_value = 0
 
@@ -1422,15 +1368,12 @@ class PortfolioDashboard:
                 continue
 
             try:
-                ticker = yf.Ticker(stock['symbol'])
                 # Get data around this date (±5 days for buffer)
-                hist = ticker.history(start=date - timedelta(days=5), end=date + timedelta(days=5))
-
-                if not hist.empty:
-                    # Use the closest available price
-                    price = float(hist['Close'].iloc[-1])
-                else:
-                    # Fallback to default price
+                start_date = date - timedelta(days=5)
+                end_date = date + timedelta(days=5)
+                hist = fetch_yfinance_history(stock['symbol'], start=start_date, end=end_date)
+                price = self._get_price_from_history_window(hist, start_date, end_date)
+                if price is None:
                     price = stock['price']
 
                 total_value += stock['quantity'] * price

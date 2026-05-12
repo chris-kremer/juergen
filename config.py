@@ -5,14 +5,12 @@ Portfolio configuration data
 USERS = [
     {
         "username": "user",
-        "password": "password",
         "portfolio_percentage": 1.0,
         "initial_investment": 231158,
         "paid_date": "2022-01-01"
     },
     {
         "username": "foehr",
-        "password": "foehr1",
         "portfolio_percentage": 0.07246599,
         "initial_investment": 20000,
         "payments": [
@@ -30,14 +28,12 @@ USERS = [
     },
     {
         "username": "kremer",
-        "password": "kremer1",
         "portfolio_percentage": 0.53848802,
         "initial_investment": 130000,
         "paid_date": "2022-01-01"
     },
     {
         "username": "annika",
-        "password": "anakin",
         "portfolio_percentage": 0.003682054,
         "initial_investment": 200,
         "payments": [
@@ -66,7 +62,6 @@ USERS = [
     },
     {
         "username": "juergen",
-        "password": "juergen1",
         "portfolio_percentage": 0.24434178,
         "initial_investment": 50000,
         "payments": [
@@ -76,7 +71,6 @@ USERS = [
     },
     {
         "username": "christian",
-        "password": "chris1",
         "portfolio_percentage": 0.14266367,
         "initial_investment": 30000,
         "payments": [

@@ -15,12 +15,7 @@ import os
 secrets_path = "/Users/chris/juergen/.streamlit/secrets.toml"
 if os.path.exists(secrets_path):
     print(f"✓ Secrets file exists at {secrets_path}")
-    with open(secrets_path, 'r') as f:
-        content = f.read()
-        if '[gsheet_credentials]' in content:
-            print("✓ Found [gsheet_credentials] section")
-        if 'login_sheet_url' in content:
-            print("✓ Found login_sheet_url")
+    print("✓ Not reading secrets contents in test output")
 else:
     print(f"✗ Secrets file NOT found at {secrets_path}")
 

@@ -2,18 +2,98 @@
 Stock price fetching functionality with fallback to default values
 """
 
+import copy
+import threading
+import time as time_module
 import yfinance as yf
 import pandas as pd
 import streamlit as st
-from typing import Dict, List, Tuple
-import time
-from translations import get_language, get_text, format_currency, format_currency_change
+from typing import Dict, List, Optional, Tuple
+from translations import get_text
+
+
+def _fetch_yfinance_history_uncached(symbol: str, period: str = None, start=None, end=None) -> pd.DataFrame:
+    try:
+        ticker = yf.Ticker(symbol)
+        if period:
+            return ticker.history(period=period)
+        return ticker.history(start=start, end=end)
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_yfinance_history(symbol: str, period: str = None, start=None, end=None) -> pd.DataFrame:
+    """Cached Yahoo Finance history lookup shared across dashboard sections."""
+    return _fetch_yfinance_history_uncached(symbol, period=period, start=start, end=end)
+
+
+_PREFETCH_LOCK = threading.Lock()
+_PREFETCH_RESULT: Optional[Tuple[List[Dict], List[str]]] = None
+_PREFETCH_COMPLETED_AT = 0.0
+_PREFETCH_IN_PROGRESS = False
+
+
+def start_stock_price_prefetch(stocks: List[Dict], max_age_seconds: int = 300) -> str:
+    """Start a background current-price download if no fresh result exists."""
+    global _PREFETCH_IN_PROGRESS, _PREFETCH_RESULT, _PREFETCH_COMPLETED_AT
+
+    now = time_module.time()
+    with _PREFETCH_LOCK:
+        if _PREFETCH_RESULT is not None and now - _PREFETCH_COMPLETED_AT <= max_age_seconds:
+            return "ready"
+        if _PREFETCH_IN_PROGRESS:
+            return "running"
+        _PREFETCH_IN_PROGRESS = True
+
+    def _worker():
+        global _PREFETCH_IN_PROGRESS, _PREFETCH_RESULT, _PREFETCH_COMPLETED_AT
+        try:
+            result = PriceFetcher().fetch_stock_prices(
+                copy.deepcopy(stocks),
+                show_progress=False,
+                use_cached_history=False,
+            )
+            with _PREFETCH_LOCK:
+                _PREFETCH_RESULT = result
+                _PREFETCH_COMPLETED_AT = time_module.time()
+        finally:
+            with _PREFETCH_LOCK:
+                _PREFETCH_IN_PROGRESS = False
+
+    thread = threading.Thread(target=_worker, name="stock-price-prefetch", daemon=True)
+    thread.start()
+    return "started"
+
+
+def get_prefetched_stock_prices(max_age_seconds: int = 300) -> Optional[Tuple[List[Dict], List[str]]]:
+    """Return a copy of the warmed price result if it is still fresh."""
+    with _PREFETCH_LOCK:
+        if _PREFETCH_RESULT is None:
+            return None
+        if time_module.time() - _PREFETCH_COMPLETED_AT > max_age_seconds:
+            return None
+        return copy.deepcopy(_PREFETCH_RESULT)
+
+
+def clear_stock_price_prefetch():
+    """Clear the background price cache, used when the user explicitly refreshes."""
+    global _PREFETCH_RESULT, _PREFETCH_COMPLETED_AT
+    with _PREFETCH_LOCK:
+        _PREFETCH_RESULT = None
+        _PREFETCH_COMPLETED_AT = 0.0
 
 class PriceFetcher:
     def __init__(self):
         self.failed_symbols = []
         
-    def fetch_stock_prices(self, stocks: List[Dict], language: str = 'en') -> Tuple[List[Dict], List[str]]:
+    def fetch_stock_prices(
+        self,
+        stocks: List[Dict],
+        language: str = 'en',
+        show_progress: bool = True,
+        use_cached_history: bool = True,
+    ) -> Tuple[List[Dict], List[str]]:
         """
         Fetch current stock prices using yfinance
         Returns updated stocks list and list of symbols that failed to fetch
@@ -21,14 +101,15 @@ class PriceFetcher:
         updated_stocks = []
         failed_symbols = []
         
-        # Simple progress display
-        progress_container = st.container()
-        
-        with progress_container:
-            # Progress bar
-            progress_bar = st.progress(0)
-            # Simple status text
-            status_text = st.empty()
+        progress_container = None
+        progress_bar = None
+        status_text = None
+
+        if show_progress:
+            progress_container = st.container()
+            with progress_container:
+                progress_bar = st.progress(0)
+                status_text = st.empty()
             
         non_cash_stocks = [s for s in stocks if s["symbol"] != "CASH"]
         total_stocks = len(non_cash_stocks)
@@ -43,13 +124,15 @@ class PriceFetcher:
                 
             current_index = len([s for s in updated_stocks if s["symbol"] != "CASH"])
             
-            # Update status
-            status_text.text(f"{get_text('fetching_price_for', language, symbol)} ({current_index + 1}/{total_stocks})")
+            if status_text:
+                status_text.text(f"{get_text('fetching_price_for', language, symbol)} ({current_index + 1}/{total_stocks})")
             
             try:
                 # Fetch stock data
-                ticker = yf.Ticker(symbol)
-                hist = ticker.history(period="1d")
+                if use_cached_history:
+                    hist = fetch_yfinance_history(symbol, period="1d")
+                else:
+                    hist = _fetch_yfinance_history_uncached(symbol, period="1d")
                 
                 if not hist.empty:
                     # Get current and previous closing prices
@@ -89,15 +172,13 @@ class PriceFetcher:
             # Update progress bar
             current_progress = len([s for s in updated_stocks if s["symbol"] != "CASH"])
             progress_percentage = current_progress / total_stocks
-            progress_bar.progress(progress_percentage)
+            if progress_bar:
+                progress_bar.progress(progress_percentage)
             
-            # Small delay to avoid hitting rate limits
-            time.sleep(0.1)
-        
-        # Keep completed status briefly then clear
-        status_text.text(f"✅ Completed! ({total_stocks}/{total_stocks})")
-        time.sleep(1.0)
-        progress_container.empty()
+        if status_text:
+            status_text.text(f"✅ Completed! ({total_stocks}/{total_stocks})")
+        if progress_container:
+            progress_container.empty()
         
         return updated_stocks, failed_symbols
     
@@ -169,8 +250,7 @@ class PriceFetcher:
                 continue
                 
             try:
-                ticker = yf.Ticker(stock['symbol'])
-                hist = ticker.history(period=yf_period)
+                hist = fetch_yfinance_history(stock['symbol'], period=yf_period)
                 
                 if not hist.empty and len(hist) >= 2:
                     current_price = float(hist['Close'].iloc[-1])

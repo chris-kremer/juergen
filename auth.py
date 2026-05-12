@@ -7,6 +7,12 @@ from typing import Optional, Dict
 from config import USERS
 from translations import get_language, get_text
 from login_tracker import login_tracker
+from security import get_configured_password_hash, verify_password
+import time
+
+
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_SECONDS = 15 * 60
 
 class AuthSystem:
     def __init__(self):
@@ -14,24 +20,53 @@ class AuthSystem:
             st.session_state.authenticated = False
         if 'current_user' not in st.session_state:
             st.session_state.current_user = None
+        if 'failed_login_attempts' not in st.session_state:
+            st.session_state.failed_login_attempts = {}
+
+    def _find_user(self, username: str) -> Optional[Dict]:
+        normalized_username = username.strip().lower()
+        return next((user for user in USERS if user['username'] == normalized_username), None)
+
+    def _is_locked_out(self, username: str) -> bool:
+        attempt_state = st.session_state.failed_login_attempts.get(username, {})
+        locked_until = attempt_state.get("locked_until", 0)
+        return locked_until > time.time()
+
+    def _record_failed_attempt(self, username: str):
+        attempt_state = st.session_state.failed_login_attempts.get(username, {"count": 0})
+        count = attempt_state.get("count", 0) + 1
+        attempt_state["count"] = count
+
+        if count >= MAX_FAILED_ATTEMPTS:
+            attempt_state["locked_until"] = time.time() + LOCKOUT_SECONDS
+
+        st.session_state.failed_login_attempts[username] = attempt_state
+
+    def _clear_failed_attempts(self, username: str):
+        st.session_state.failed_login_attempts.pop(username, None)
     
     def authenticate(self, username: str, password: str) -> bool:
         """
         Authenticate user with username and password
         Returns True if authentication successful, False otherwise
         """
-        import sys
-        for user in USERS:
-            if user['username'] == username and user['password'] == password:
-                st.session_state.authenticated = True
-                st.session_state.current_user = user
+        normalized_username = username.strip().lower()
 
-                # Log successful login
-                print(f"AUTH: About to call log_login for {username}", file=sys.stderr, flush=True)
-                login_tracker.log_login(username)
-                print(f"AUTH: Finished calling log_login for {username}", file=sys.stderr, flush=True)
+        if self._is_locked_out(normalized_username):
+            return False
 
-                return True
+        user = self._find_user(normalized_username)
+        password_hash = get_configured_password_hash(normalized_username)
+
+        if user and password_hash and verify_password(password, password_hash):
+            st.session_state.authenticated = True
+            # Keep sensitive auth material out of the session.
+            st.session_state.current_user = user.copy()
+            self._clear_failed_attempts(normalized_username)
+            login_tracker.log_login(normalized_username)
+            return True
+
+        self._record_failed_attempt(normalized_username)
         return False
     
     def logout(self):
@@ -58,6 +93,8 @@ class AuthSystem:
         
         with col2:
             st.markdown(f"### {get_text('please_log_in')}")
+            if not any(get_configured_password_hash(user["username"]) for user in USERS):
+                st.warning("Authentication is not configured. Add password hashes to Streamlit secrets.")
             
             with st.form("login_form"):
                 username = st.text_input(get_text('username'), placeholder=get_text('enter_username'))

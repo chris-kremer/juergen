@@ -5,7 +5,12 @@ A Streamlit app for managing and viewing a shared stock portfolio
 
 import streamlit as st
 from auth import AuthSystem
-from price_fetcher import PriceFetcher
+from price_fetcher import (
+    PriceFetcher,
+    clear_stock_price_prefetch,
+    get_prefetched_stock_prices,
+    start_stock_price_prefetch,
+)
 from portfolio_dashboard import PortfolioDashboard
 from config import STOCKS
 from translations import get_language, get_text
@@ -19,34 +24,160 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
+# Custom CSS for a calmer dashboard presentation
 st.markdown("""
 <style>
-    .main-header {
-        padding: 1rem 0;
-        border-bottom: 2px solid #f0f2f6;
-        margin-bottom: 2rem;
+    :root {
+        --app-bg: #f6f8fb;
+        --panel-bg: #ffffff;
+        --border: #e4e9f0;
+        --muted: #667085;
+        --text: #182230;
+        --accent: #2563eb;
     }
-    
-    .metric-container {
-        background-color: #f8f9fa;
+
+    .stApp {
+        background: var(--app-bg);
+    }
+
+    .block-container {
+        max-width: 1420px;
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+    }
+
+    [data-testid="stSidebar"] {
+        background: var(--panel-bg);
+        border-right: 1px solid var(--border);
+    }
+
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+        color: var(--muted);
+        line-height: 1.45;
+    }
+
+    h1, h2, h3 {
+        color: var(--text);
+        letter-spacing: 0;
+    }
+
+    h1 {
+        font-size: 2rem;
+        margin-bottom: 0.25rem;
+    }
+
+    h2, h3 {
+        margin-top: 1.25rem;
+    }
+
+    hr {
+        margin: 1.25rem 0;
+        border-color: var(--border);
+    }
+
+    [data-testid="stMetric"] {
+        background: var(--panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem 1rem 0.9rem;
+        min-height: 112px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: var(--muted);
+    }
+
+    [data-testid="stMetricValue"] {
+        color: var(--text);
+        font-weight: 700;
+        font-size: 1.55rem;
+    }
+
+    [data-testid="stMetricDelta"] {
+        font-weight: 600;
+    }
+
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 0.85rem;
+        margin: 0.75rem 0 1.25rem;
+    }
+
+    .metric-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
         padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #1f77b4;
+        min-height: 112px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
     }
-    
-    .login-container {
-        max-width: 400px;
-        margin: 2rem auto;
-        padding: 2rem;
-        border-radius: 1rem;
-        border: 1px solid #e1e5e9;
-        background-color: #f8f9fa;
+
+    .metric-label {
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.25;
+        margin-bottom: 0.55rem;
+        white-space: normal;
     }
-    
+
+    .metric-value {
+        color: var(--text);
+        font-size: 1.45rem;
+        font-weight: 750;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+    }
+
+    .metric-delta {
+        font-size: 0.9rem;
+        font-weight: 650;
+        margin-top: 0.5rem;
+    }
+
+    .metric-delta.positive {
+        color: #16a34a;
+    }
+
+    .metric-delta.negative {
+        color: #dc2626;
+    }
+
+    .metric-delta.neutral {
+        color: var(--muted);
+    }
+
+    [data-testid="stPlotlyChart"],
+    [data-testid="stDataFrame"] {
+        background: var(--panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.75rem;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    }
+
     .stButton > button {
         width: 100%;
-        border-radius: 0.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        font-weight: 600;
+        color: var(--text);
+        background: var(--panel-bg);
+    }
+
+    .stButton > button p {
+        color: inherit;
+    }
+
+    .stButton > button[kind="primary"],
+    .stDownloadButton > button {
+        border-radius: 8px;
+    }
+
+    div[data-testid="stAlert"] {
+        border-radius: 8px;
+        border: 1px solid var(--border);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -61,6 +192,7 @@ def main():
     
     # Check authentication
     if not auth.is_authenticated():
+        start_stock_price_prefetch(STOCKS)
         auth.show_login_form()
         return
     
@@ -77,6 +209,7 @@ def main():
             st.markdown("---")
             if st.button(get_text('refresh_prices', lang), use_container_width=True):
                 st.cache_data.clear()
+                clear_stock_price_prefetch()
                 st.rerun()
             
             st.markdown("---")
@@ -87,13 +220,10 @@ def main():
         # Fetch stock prices (with caching for better performance)
         @st.cache_data(ttl=300)  # Cache for 5 minutes
         def fetch_prices(language):
+            warmed_prices = get_prefetched_stock_prices()
+            if warmed_prices is not None:
+                return warmed_prices
             return price_fetcher.fetch_stock_prices(STOCKS, language)
-        
-        # Add cache clearing button in sidebar for development
-        with st.sidebar:
-            if st.button("🔄 Clear Cache & Refresh", use_container_width=True):
-                st.cache_data.clear()
-                st.rerun()
         
         # Show loading message
         with st.spinner(get_text('fetching_prices', lang)):

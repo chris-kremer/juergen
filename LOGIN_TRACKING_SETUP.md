@@ -33,7 +33,7 @@ Every successful login will record:
 1. In your Google Cloud project, go to "APIs & Services" → "Library"
 2. Search for "Google Sheets API"
 3. Click on it and press "Enable"
-4. Also enable "Google Drive API" (search and enable it)
+4. Google Drive API access is not required for the app
 
 ### 4. Create Service Account
 

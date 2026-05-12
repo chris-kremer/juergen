@@ -4,7 +4,7 @@ A Streamlit-based web application for viewing and managing a shared stock portfo
 
 ## Features
 
-- **Multi-user Authentication**: Secure login system with different portfolio ownership percentages
+- **Multi-user Authentication**: Password-hash based login with different portfolio ownership percentages
 - **Real-time Stock Prices**: Fetches live prices from Yahoo Finance with fallback to default values
 - **Portfolio Dashboard**: Comprehensive overview with charts and metrics
 - **Interactive Visualizations**: Pie charts and bar charts for portfolio breakdown
@@ -15,16 +15,16 @@ A Streamlit-based web application for viewing and managing a shared stock portfo
 
 ## Users and Access
 
-The application supports the following users with their respective portfolio shares:
+The application supports the following users with their respective portfolio shares. Passwords are not stored in this repository; configure password hashes in Streamlit secrets before users can log in.
 
-| Username | Password | Portfolio Share |
-|----------|----------|----------------|
-| user | password | 100.00% |
-| foehr | foehr1 | 5.90% |
-| kremer | kremer1 | 61.45% |
-| annika | anakin | 0.32% |
-| juergen | juergen1 | 14.75% |
-| christian | chris1 | 17.58% |
+| Username | Portfolio Share |
+|----------|----------------|
+| user | 100.00% |
+| foehr | 7.25% |
+| kremer | 53.85% |
+| annika | 0.37% |
+| juergen | 24.43% |
+| christian | 14.27% |
 
 ## Installation & Setup
 
@@ -40,7 +40,35 @@ The application supports the following users with their respective portfolio sha
 
 3. **Access the app**:
    - The app will open in your browser at `http://localhost:8501`
-   - Use any of the credentials above to log in
+   - Log in with passwords configured in Streamlit secrets
+
+## Password Setup
+
+Generate a password hash for each user:
+
+```bash
+python3 generate_password_hash.py annika
+```
+
+Add the output to `.streamlit/secrets.toml` for local development, or to Streamlit Cloud secrets:
+
+```toml
+[password_hashes]
+annika = "pbkdf2_sha256$600000$..."
+foehr = "pbkdf2_sha256$600000$..."
+kremer = "pbkdf2_sha256$600000$..."
+juergen = "pbkdf2_sha256$600000$..."
+christian = "pbkdf2_sha256$600000$..."
+user = "pbkdf2_sha256$600000$..."
+```
+
+Environment variables are also supported, for example:
+
+```bash
+export PORTFOLIO_PASSWORD_HASH_ANNIKA='pbkdf2_sha256$600000$...'
+```
+
+Do not reuse the old example passwords. Rotate all family member passwords before deploying.
 
 ## Application Structure
 
@@ -86,7 +114,10 @@ The portfolio includes a diverse mix of:
 4. **Detailed Holdings**: Comprehensive table with all stock details
 
 ### Security
-- Simple but secure authentication system
+- Passwords are verified with salted PBKDF2 hashes
+- Password hashes are loaded from Streamlit secrets or environment variables
+- Plaintext passwords are not stored in source control
+- Failed login attempts are temporarily rate-limited per session
 - Session-based login state management
 - Logout functionality
 
@@ -112,7 +143,7 @@ The application is designed to be extensible. Potential additions include:
 If you encounter issues:
 
 1. **Price fetching errors**: The app will automatically fall back to default prices
-2. **Login issues**: Check that you're using the exact username/password combinations
+2. **Login issues**: Check that the user's password hash exists in Streamlit secrets or the matching environment variable
 3. **Performance**: Clear cache using the "Refresh Prices" button if data seems stale
 4. **Dependencies**: Ensure all packages in requirements.txt are installed
 
