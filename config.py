@@ -11,7 +11,7 @@ USERS = [
     },
     {
         "username": "foehr",
-        "portfolio_percentage": 0.07246599,
+        "portfolio_percentage": 0.091309020,
         "initial_investment": 20000,
         "payments": [
             {"amount": 20000, "date": "2025-07-01"},
@@ -23,18 +23,19 @@ USERS = [
             {"amount": 500, "date": "2026-02-01"},
             {"amount": 500, "date": "2026-02-02"},
             {"amount": 5000, "date": "2026-03-02"},
-            {"amount": 500, "date": "2026-04-01"}
+            {"amount": 500, "date": "2026-04-01"},
+            {"amount": 9500, "date": "2026-06-01", "type": "Cash pay-in"}
         ]
     },
     {
         "username": "kremer",
-        "portfolio_percentage": 0.53848802,
+        "portfolio_percentage": 0.527548533,
         "initial_investment": 130000,
         "paid_date": "2022-01-01"
     },
     {
         "username": "annika",
-        "portfolio_percentage": 0.004501651,
+        "portfolio_percentage": 0.004410199,
         "initial_investment": 200,
         "payments": [
             {"amount": 100, "date": "2024-09-01"},
@@ -66,7 +67,7 @@ USERS = [
     },
     {
         "username": "juergen",
-        "portfolio_percentage": 0.24434178,
+        "portfolio_percentage": 0.239377930,
         "initial_investment": 50000,
         "payments": [
             {"amount": 50000, "date": "2025-06-01"},
@@ -75,7 +76,7 @@ USERS = [
     },
     {
         "username": "christian",
-        "portfolio_percentage": 0.141844073,
+        "portfolio_percentage": 0.138962484,
         "initial_investment": 30000,
         "payments": [
             {"amount": 30000, "date": "2022-01-01", "type": "Initial investment"},
@@ -106,5 +107,5 @@ STOCKS = [
     {"symbol": "GS", "quantity": 8.0, "price": 608.10, "name": "Goldman Sachs", "industry": "Bank"},
     {"symbol": "LUV", "quantity": 80.0, "price": 28.79, "name": "Southwest (Airline)", "industry": "Airlines"},
     {"symbol": "UAL", "quantity": 50.0, "price": 68.92, "name": "United (Airline)", "industry": "Airlines"},
-    {"symbol": "CASH", "quantity": 137358.0, "price": 1.00, "name": "Cash", "industry": None}
+    {"symbol": "CASH", "quantity": 146858.0, "price": 1.00, "name": "Cash", "industry": None}
 ]

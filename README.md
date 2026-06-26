@@ -20,11 +20,11 @@ The application supports the following users with their respective portfolio sha
 | Username | Portfolio Share |
 |----------|----------------|
 | user | 100.00% |
-| foehr | 7.25% |
-| kremer | 53.85% |
-| annika | 0.45% |
-| juergen | 24.43% |
-| christian | 14.18% |
+| foehr | 9.13% |
+| kremer | 52.75% |
+| annika | 0.44% |
+| juergen | 23.94% |
+| christian | 13.90% |
 
 ## Installation & Setup
 
