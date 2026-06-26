@@ -34,7 +34,7 @@ USERS = [
     },
     {
         "username": "annika",
-        "portfolio_percentage": 0.004392550,
+        "portfolio_percentage": 0.004501651,
         "initial_investment": 200,
         "payments": [
             {"amount": 100, "date": "2024-09-01"},
@@ -60,7 +60,8 @@ USERS = [
             {"amount": 100, "date": "2026-04-01"},
             {"amount": 100, "date": "2026-05-01", "type": "Share transfer from Christian"},
             {"amount": 150, "date": "2026-05-27", "type": "Share transfer from Christian"},
-            {"amount": 64.26, "date": "2026-05-27", "type": "Share transfer from Christian"}
+            {"amount": 64.26, "date": "2026-05-27", "type": "Share transfer from Christian"},
+            {"amount": 50, "date": "2026-06-26", "type": "Share transfer from Christian"}
         ]
     },
     {
@@ -74,7 +75,7 @@ USERS = [
     },
     {
         "username": "christian",
-        "portfolio_percentage": 0.141953174,
+        "portfolio_percentage": 0.141844073,
         "initial_investment": 30000,
         "payments": [
             {"amount": 30000, "date": "2022-01-01", "type": "Initial investment"},
@@ -83,7 +84,8 @@ USERS = [
             {"amount": -500, "date": "2026-04-01", "type": "Share sale to Foehr"},
             {"amount": -100, "date": "2026-05-01", "type": "Share transfer to Annika"},
             {"amount": -150, "date": "2026-05-27", "type": "Share transfer to Annika"},
-            {"amount": -64.26, "date": "2026-05-27", "type": "Share transfer to Annika"}
+            {"amount": -64.26, "date": "2026-05-27", "type": "Share transfer to Annika"},
+            {"amount": -50, "date": "2026-06-26", "type": "Share transfer to Annika"}
         ]
     }
 ]
