@@ -22,9 +22,9 @@ The application supports the following users with their respective portfolio sha
 | user | 100.00% |
 | foehr | 9.23% |
 | kremer | 52.70% |
-| annika | 0.44% |
+| annika | 0.46% |
 | juergen | 23.91% |
-| christian | 13.88% |
+| christian | 13.86% |
 
 ## Installation & Setup
 
