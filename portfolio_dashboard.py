@@ -12,6 +12,7 @@ from typing import List, Dict
 from price_fetcher import PriceFetcher, fetch_yfinance_history
 from config import STOCKS
 from translations import get_language, get_text, format_currency, format_currency_change
+from celebration import build_doubling_message, should_show_doubling_celebration
 
 pio.templates.default = "plotly_white"
 px.defaults.template = "plotly_white"
@@ -169,6 +170,10 @@ class PortfolioDashboard:
                 "delta": format_currency_change(top_value_stock['daily_change_value'], lang) if top_value_stock else None,
             },
         ])
+
+        if should_show_doubling_celebration(user['username'], total_return_percentage):
+            st.balloons()
+            st.success(build_doubling_message(total_return_percentage), icon="🎉")
 
         st.markdown("---")
 
