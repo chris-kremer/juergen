@@ -15,6 +15,7 @@ from portfolio_dashboard import PortfolioDashboard
 from config import STOCKS
 from translations import get_language, get_text
 from message_system import message_system
+from ui_theme import build_app_css, build_footer
 
 # Page configuration
 st.set_page_config(
@@ -182,6 +183,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Refined visual layer: quieter Streamlit chrome and an editorial fintech feel.
+st.markdown(f"<style>{build_app_css()}</style>", unsafe_allow_html=True)
+
 def main():
     """Main application function"""
     
@@ -239,19 +243,8 @@ def main():
         # Display dashboard
         dashboard.show_dashboard(user, stocks_with_prices, failed_symbols)
         
-        # Footer
-        st.markdown("---")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown(
-                f"""
-                <div style='text-align: center; color: #666; font-size: 0.8rem;'>
-                📊 {get_text('portfolio_app', lang)}<br>
-                {get_text('data_disclaimer', lang)}
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
+        # Quiet branded footer
+        st.markdown(build_footer(lang), unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()

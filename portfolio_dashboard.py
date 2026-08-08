@@ -18,6 +18,7 @@ from celebration import (
     resolve_doubling_celebration_return,
     should_show_annika_2500_celebration,
 )
+from ui_theme import build_dashboard_header
 
 pio.templates.default = "plotly_white"
 px.defaults.template = "plotly_white"
@@ -27,32 +28,38 @@ class PortfolioDashboard:
         self.price_fetcher = price_fetcher
 
     def _plotly_chart(self, fig, **kwargs):
-        """Render Plotly charts with explicit light styling."""
+        """Render Plotly charts with the restrained portfolio theme."""
         fig.update_layout(
             template="plotly_white",
-            paper_bgcolor="#ffffff",
+            paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="#ffffff",
-            font=dict(color="#182230"),
-            title_font=dict(color="#182230"),
+            font=dict(color="#171c18", family="Inter, sans-serif"),
+            title_font=dict(color="#171c18", size=19),
+            colorway=["#176b4d", "#a6782d", "#54706a", "#7b6d8d", "#ba6f52", "#4878a8"],
+            hoverlabel=dict(
+                bgcolor="#171c18",
+                font_color="#ffffff",
+                bordercolor="#171c18",
+            ),
             legend=dict(
-                bgcolor="rgba(255,255,255,0.92)",
-                bordercolor="#e4e9f0",
+                bgcolor="rgba(255,255,255,0.86)",
+                bordercolor="rgba(201,208,200,.8)",
                 borderwidth=1,
-                font=dict(color="#182230"),
+                font=dict(color="#37413a"),
             ),
             margin=dict(l=40, r=24, t=56, b=44),
         )
         fig.update_xaxes(
-            color="#475467",
-            gridcolor="#edf1f7",
-            zerolinecolor="#d0d5dd",
-            linecolor="#d0d5dd",
+            color="#68736b",
+            gridcolor="#edf0ec",
+            zerolinecolor="#c9d0c8",
+            linecolor="#c9d0c8",
         )
         fig.update_yaxes(
-            color="#475467",
-            gridcolor="#edf1f7",
-            zerolinecolor="#d0d5dd",
-            linecolor="#d0d5dd",
+            color="#68736b",
+            gridcolor="#edf0ec",
+            zerolinecolor="#c9d0c8",
+            linecolor="#c9d0c8",
         )
         st.plotly_chart(fig, use_container_width=True, theme=None, **kwargs)
 
@@ -95,9 +102,11 @@ class PortfolioDashboard:
             st.session_state.pop('kremer_doubling_preview_requested', False)
         )
         
-        # Dashboard header
-        st.title(get_text('portfolio_overview', lang, user['username'].title()))
-        st.markdown("---")
+        # Branded dashboard header
+        st.markdown(
+            build_dashboard_header(user['username'], lang),
+            unsafe_allow_html=True,
+        )
         
         # Show price fetch status
         if failed_symbols:

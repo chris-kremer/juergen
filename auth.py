@@ -8,6 +8,7 @@ from config import USERS
 from translations import get_language, get_text
 from login_tracker import login_tracker
 from security import get_configured_password_hash, verify_password
+from ui_theme import build_login_intro
 import time
 
 
@@ -85,21 +86,21 @@ class AuthSystem:
     
     def show_login_form(self):
         """Display login form"""
-        st.title(get_text('portfolio_login'))
-        st.markdown("---")
+        st.markdown(build_login_intro(), unsafe_allow_html=True)
         
         # Center the login form
         col1, col2, col3 = st.columns([1, 2, 1])
         
         with col2:
-            st.markdown(f"### {get_text('please_log_in')}")
             if not any(get_configured_password_hash(user["username"]) for user in USERS):
                 st.warning("Authentication is not configured. Add password hashes to Streamlit secrets.")
             
             with st.form("login_form"):
                 username = st.text_input(get_text('username'), placeholder=get_text('enter_username'))
                 password = st.text_input(get_text('password'), type="password", placeholder=get_text('enter_password'))
-                submit_button = st.form_submit_button(get_text('login'), use_container_width=True)
+                submit_button = st.form_submit_button(
+                    get_text('login'), use_container_width=True, type="primary"
+                )
                 
                 if submit_button:
                     if username and password:
