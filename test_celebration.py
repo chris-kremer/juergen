@@ -1,6 +1,10 @@
 import unittest
 
-from celebration import build_doubling_message, should_show_doubling_celebration
+from celebration import (
+    build_doubling_celebration_html,
+    build_doubling_message,
+    should_show_doubling_celebration,
+)
 
 
 class DoublingCelebrationTests(unittest.TestCase):
@@ -23,6 +27,14 @@ class DoublingCelebrationTests(unittest.TestCase):
         message = build_doubling_message(102.4)
         self.assertIn("verdoppelt", message)
         self.assertIn("102,4 %", message)
+
+    def test_html_is_an_all_out_celebration(self):
+        html = build_doubling_celebration_html(102.4)
+        self.assertIn("100 % GEKNACKT", html)
+        self.assertIn("DOPPELT HÄLT BESSER", html)
+        self.assertIn("102,4 %", html)
+        self.assertIn("celebration-confetti", html)
+        self.assertIn("prefers-reduced-motion", html)
 
 
 if __name__ == "__main__":

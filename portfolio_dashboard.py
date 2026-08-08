@@ -12,7 +12,7 @@ from typing import List, Dict
 from price_fetcher import PriceFetcher, fetch_yfinance_history
 from config import STOCKS
 from translations import get_language, get_text, format_currency, format_currency_change
-from celebration import build_doubling_message, should_show_doubling_celebration
+from celebration import build_doubling_celebration_html, should_show_doubling_celebration
 
 pio.templates.default = "plotly_white"
 px.defaults.template = "plotly_white"
@@ -173,7 +173,10 @@ class PortfolioDashboard:
 
         if should_show_doubling_celebration(user['username'], total_return_percentage):
             st.balloons()
-            st.success(build_doubling_message(total_return_percentage), icon="🎉")
+            st.markdown(
+                build_doubling_celebration_html(total_return_percentage),
+                unsafe_allow_html=True,
+            )
 
         st.markdown("---")
 
