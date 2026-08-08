@@ -12,7 +12,12 @@ from typing import List, Dict
 from price_fetcher import PriceFetcher, fetch_yfinance_history
 from config import STOCKS
 from translations import get_language, get_text, format_currency, format_currency_change
-from celebration import build_doubling_celebration_html, resolve_doubling_celebration_return
+from celebration import (
+    build_annika_2500_celebration_html,
+    build_doubling_celebration_html,
+    resolve_doubling_celebration_return,
+    should_show_annika_2500_celebration,
+)
 
 pio.templates.default = "plotly_white"
 px.defaults.template = "plotly_white"
@@ -183,6 +188,15 @@ class PortfolioDashboard:
             st.balloons()
             st.markdown(
                 build_doubling_celebration_html(celebration_return),
+                unsafe_allow_html=True,
+            )
+
+        if should_show_annika_2500_celebration(
+            user['username'], user_portfolio_value
+        ):
+            st.balloons()
+            st.markdown(
+                build_annika_2500_celebration_html(user_portfolio_value),
                 unsafe_allow_html=True,
             )
 

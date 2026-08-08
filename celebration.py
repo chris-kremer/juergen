@@ -10,6 +10,15 @@ def should_show_doubling_celebration(username: str, return_percentage: float) ->
     return username == "kremer" and 100.0 <= value <= 105.0
 
 
+def should_show_annika_2500_celebration(username: str, total_funds: float) -> bool:
+    """Return whether Annika is inside the €2,500 milestone window."""
+    try:
+        value = float(total_funds)
+    except (TypeError, ValueError):
+        return False
+    return username == "annika" and 2500.0 <= value <= 2600.0
+
+
 def resolve_doubling_celebration_return(
     username: str,
     return_percentage: float,
@@ -34,9 +43,14 @@ def build_doubling_message(return_percentage: float) -> str:
     )
 
 
-def build_doubling_celebration_html(return_percentage: float) -> str:
-    """Build a self-contained, animated milestone banner for Streamlit."""
-    formatted_return = f"{float(return_percentage):.1f}".replace(".", ",")
+def _build_celebration_html(
+    kicker: str,
+    headline: str,
+    message: str,
+    metric: str,
+    aria_label: str,
+) -> str:
+    """Build a reusable, self-contained animated milestone banner."""
     colors = ("#ffd166", "#ff5d8f", "#54e1ff", "#8cff98", "#b794f4", "#ffffff")
     shapes = []
     for index in range(52):
@@ -174,14 +188,39 @@ def build_doubling_celebration_html(return_percentage: float) -> str:
     .celebration-side {{ display: none; }}
 }}
 </style>
-<div class="celebration-stage" role="status" aria-label="Das Kremer-Depot hat sein eingesetztes Kapital verdoppelt.">
+<div class="celebration-stage" role="status" aria-label="{aria_label}">
     <div class="celebration-confetti" aria-hidden="true">{"".join(shapes)}</div>
     <span class="celebration-side left" aria-hidden="true">🎆</span>
     <span class="celebration-side right" aria-hidden="true">🎇</span>
-    <div class="celebration-kicker">100 % GEKNACKT</div>
+    <div class="celebration-kicker">{kicker}</div>
     <span class="celebration-trophy" aria-hidden="true">🏆</span>
-    <h2>DOPPELT HÄLT BESSER!</h2>
-    <p>Herzlichen Glückwunsch! Ihr habt euer eingesetztes Geld verdoppelt.</p>
-    <div class="celebration-return">🚀 Gesamtrendite: {formatted_return} %</div>
+    <h2>{headline}</h2>
+    <p>{message}</p>
+    <div class="celebration-return">{metric}</div>
 </div>
 """
+
+
+def build_doubling_celebration_html(return_percentage: float) -> str:
+    """Build the Kremer doubling celebration."""
+    formatted_return = f"{float(return_percentage):.1f}".replace(".", ",")
+    return _build_celebration_html(
+        kicker="100 % GEKNACKT",
+        headline="DOPPELT HÄLT BESSER!",
+        message="Herzlichen Glückwunsch! Ihr habt euer eingesetztes Geld verdoppelt.",
+        metric=f"🚀 Gesamtrendite: {formatted_return} %",
+        aria_label="Das Kremer-Depot hat sein eingesetztes Kapital verdoppelt.",
+    )
+
+
+def build_annika_2500_celebration_html(total_funds: float) -> str:
+    """Build Annika's €2,500 total-funds celebration."""
+    value = float(total_funds)
+    formatted_value = f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return _build_celebration_html(
+        kicker="2.500 € GEKNACKT",
+        headline="ANNIKA, WAS FÜR EIN MEILENSTEIN!",
+        message="Herzlichen Glückwunsch! Dein Depot hat die Marke von 2.500 € geknackt.",
+        metric=f"✨ Aktueller Depotwert: {formatted_value} €",
+        aria_label="Annikas Depot hat einen Gesamtwert von 2.500 Euro erreicht.",
+    )

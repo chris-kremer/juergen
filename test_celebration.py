@@ -1,9 +1,11 @@
 import unittest
 
 from celebration import (
+    build_annika_2500_celebration_html,
     build_doubling_celebration_html,
     build_doubling_message,
     resolve_doubling_celebration_return,
+    should_show_annika_2500_celebration,
     should_show_doubling_celebration,
 )
 
@@ -53,6 +55,21 @@ class DoublingCelebrationTests(unittest.TestCase):
         self.assertIsNone(
             resolve_doubling_celebration_return("juergen", 98.9, preview_requested=True)
         )
+
+    def test_annika_2500_milestone_has_a_bounded_window(self):
+        self.assertFalse(should_show_annika_2500_celebration("annika", 2499.99))
+        self.assertTrue(should_show_annika_2500_celebration("annika", 2500.0))
+        self.assertTrue(should_show_annika_2500_celebration("annika", 2550.0))
+        self.assertTrue(should_show_annika_2500_celebration("annika", 2600.0))
+        self.assertFalse(should_show_annika_2500_celebration("annika", 2600.01))
+        self.assertFalse(should_show_annika_2500_celebration("kremer", 2550.0))
+
+    def test_annika_html_names_her_and_formats_the_live_value(self):
+        html = build_annika_2500_celebration_html(2550.0)
+        self.assertIn("2.500 € GEKNACKT", html)
+        self.assertIn("ANNIKA", html)
+        self.assertIn("2.550,00 €", html)
+        self.assertIn("celebration-confetti", html)
 
 
 if __name__ == "__main__":
