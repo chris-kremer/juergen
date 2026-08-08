@@ -3,6 +3,7 @@ import unittest
 from celebration import (
     build_doubling_celebration_html,
     build_doubling_message,
+    resolve_doubling_celebration_return,
     should_show_doubling_celebration,
 )
 
@@ -35,6 +36,23 @@ class DoublingCelebrationTests(unittest.TestCase):
         self.assertIn("102,4 %", html)
         self.assertIn("celebration-confetti", html)
         self.assertIn("prefers-reduced-motion", html)
+
+    def test_kremer_can_replay_a_safe_preview_below_the_real_threshold(self):
+        self.assertEqual(
+            resolve_doubling_celebration_return("kremer", 98.9, preview_requested=True),
+            102.4,
+        )
+
+    def test_real_milestone_uses_the_live_return(self):
+        self.assertEqual(
+            resolve_doubling_celebration_return("kremer", 101.2, preview_requested=False),
+            101.2,
+        )
+
+    def test_preview_is_not_available_to_other_accounts(self):
+        self.assertIsNone(
+            resolve_doubling_celebration_return("juergen", 98.9, preview_requested=True)
+        )
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ from typing import List, Dict
 from price_fetcher import PriceFetcher, fetch_yfinance_history
 from config import STOCKS
 from translations import get_language, get_text, format_currency, format_currency_change
-from celebration import build_doubling_celebration_html, should_show_doubling_celebration
+from celebration import build_doubling_celebration_html, resolve_doubling_celebration_return
 
 pio.templates.default = "plotly_white"
 px.defaults.template = "plotly_white"
@@ -86,6 +86,15 @@ class PortfolioDashboard:
         """Display the main portfolio dashboard"""
         
         lang = get_language(user['username'])
+
+        preview_requested = False
+        if user['username'] == 'kremer':
+            with st.sidebar:
+                st.markdown("---")
+                preview_requested = st.button(
+                    get_text('preview_doubling_celebration', lang),
+                    use_container_width=True,
+                )
         
         # Dashboard header
         st.title(get_text('portfolio_overview', lang, user['username'].title()))
@@ -171,10 +180,15 @@ class PortfolioDashboard:
             },
         ])
 
-        if should_show_doubling_celebration(user['username'], total_return_percentage):
+        celebration_return = resolve_doubling_celebration_return(
+            user['username'],
+            total_return_percentage,
+            preview_requested=preview_requested,
+        )
+        if celebration_return is not None:
             st.balloons()
             st.markdown(
-                build_doubling_celebration_html(total_return_percentage),
+                build_doubling_celebration_html(celebration_return),
                 unsafe_allow_html=True,
             )
 

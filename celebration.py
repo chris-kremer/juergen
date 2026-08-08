@@ -10,6 +10,21 @@ def should_show_doubling_celebration(username: str, return_percentage: float) ->
     return username == "kremer" and 100.0 <= value <= 105.0
 
 
+def resolve_doubling_celebration_return(
+    username: str,
+    return_percentage: float,
+    preview_requested: bool = False,
+) -> float | None:
+    """Return the percentage to celebrate, including Kremer's manual replay preview."""
+    if username != "kremer":
+        return None
+    if preview_requested:
+        return 102.4
+    if should_show_doubling_celebration(username, return_percentage):
+        return float(return_percentage)
+    return None
+
+
 def build_doubling_message(return_percentage: float) -> str:
     """Build the German milestone message using a German decimal separator."""
     formatted_return = f"{float(return_percentage):.1f}".replace(".", ",")
