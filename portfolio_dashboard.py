@@ -86,6 +86,9 @@ class PortfolioDashboard:
         """Display the main portfolio dashboard"""
         
         lang = get_language(user['username'])
+        preview_requested = bool(
+            st.session_state.pop('kremer_doubling_preview_requested', False)
+        )
         
         # Dashboard header
         st.title(get_text('portfolio_overview', lang, user['username'].title()))
@@ -171,13 +174,6 @@ class PortfolioDashboard:
             },
         ])
 
-        preview_requested = False
-        if user['username'] == 'kremer':
-            preview_requested = st.button(
-                get_text('preview_doubling_celebration', lang),
-                use_container_width=False,
-            )
-
         celebration_return = resolve_doubling_celebration_return(
             user['username'],
             total_return_percentage,
@@ -226,6 +222,17 @@ class PortfolioDashboard:
         
         # Detailed holdings table
         self.show_holdings_table(stocks_with_prices, user, lang)
+
+        # Keep the temporary replay control out of the normal dashboard flow.
+        if user['username'] == 'kremer':
+            with st.expander('⋯', expanded=False):
+                st.button(
+                    get_text('preview_doubling_celebration', lang),
+                    key='kremer_doubling_preview_button',
+                    on_click=lambda: st.session_state.__setitem__(
+                        'kremer_doubling_preview_requested', True
+                    ),
+                )
 
     def show_all_users_overview(self, stocks_with_prices: List[Dict], lang: str):
         """Show overview of all users' portfolio values (only for 'user' account)"""
