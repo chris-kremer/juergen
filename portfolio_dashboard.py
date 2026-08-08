@@ -86,15 +86,6 @@ class PortfolioDashboard:
         """Display the main portfolio dashboard"""
         
         lang = get_language(user['username'])
-
-        preview_requested = False
-        if user['username'] == 'kremer':
-            with st.sidebar:
-                st.markdown("---")
-                preview_requested = st.button(
-                    get_text('preview_doubling_celebration', lang),
-                    use_container_width=True,
-                )
         
         # Dashboard header
         st.title(get_text('portfolio_overview', lang, user['username'].title()))
@@ -179,6 +170,13 @@ class PortfolioDashboard:
                 "delta": format_currency_change(top_value_stock['daily_change_value'], lang) if top_value_stock else None,
             },
         ])
+
+        preview_requested = False
+        if user['username'] == 'kremer':
+            preview_requested = st.button(
+                get_text('preview_doubling_celebration', lang),
+                use_container_width=False,
+            )
 
         celebration_return = resolve_doubling_celebration_return(
             user['username'],
