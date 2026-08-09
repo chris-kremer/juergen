@@ -31,6 +31,7 @@ class PortfolioDashboard:
         """Render Plotly charts with the restrained portfolio theme."""
         fig.update_layout(
             template="plotly_white",
+            dragmode=False,
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="#ffffff",
             font=dict(color="#171c18", family="Inter, sans-serif"),
@@ -50,18 +51,39 @@ class PortfolioDashboard:
             margin=dict(l=40, r=24, t=56, b=44),
         )
         fig.update_xaxes(
+            fixedrange=True,
             color="#68736b",
             gridcolor="#edf0ec",
             zerolinecolor="#c9d0c8",
             linecolor="#c9d0c8",
         )
         fig.update_yaxes(
+            fixedrange=True,
             color="#68736b",
             gridcolor="#edf0ec",
             zerolinecolor="#c9d0c8",
             linecolor="#c9d0c8",
         )
-        st.plotly_chart(fig, use_container_width=True, theme=None, **kwargs)
+        requested_config = kwargs.pop("config", {}) or {}
+        chart_config = {
+            **requested_config,
+            "displayModeBar": False,
+            "scrollZoom": False,
+            "doubleClick": False,
+            "showAxisDragHandles": False,
+            "showAxisRangeEntryBoxes": False,
+            "editable": False,
+            # Preserve hover labels and intentional legend clicks.
+            "staticPlot": False,
+            "responsive": True,
+        }
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            theme=None,
+            config=chart_config,
+            **kwargs,
+        )
 
     def _show_metric_grid(self, metrics: List[Dict]):
         """Render responsive metric cards without Streamlit column truncation."""

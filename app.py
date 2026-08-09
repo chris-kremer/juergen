@@ -20,7 +20,7 @@ from ui_theme import build_app_css, build_footer
 # Page configuration
 st.set_page_config(
     page_title="Portfolio Overview",
-    page_icon="📊",
+    page_icon="↗",
     layout="wide",
     initial_sidebar_state="collapsed"
 )

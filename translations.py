@@ -25,7 +25,7 @@ TRANSLATIONS = {
         'logout': 'Logout',
         
         # Dashboard
-        'portfolio_overview': '📊 Portfolio Overview - {}',
+        'portfolio_overview': 'Portfolio Overview - {}',
         'price_fetch_status': '⚠️ Price Fetch Status',
         'could_not_fetch': 'Could not fetch live prices for {} symbols. Using default prices:',
         'your_portfolio_value': 'Your Portfolio Value',
@@ -157,7 +157,7 @@ TRANSLATIONS = {
         'logout': 'Abmelden',
         
         # Dashboard
-        'portfolio_overview': '📊 Portfolio-Übersicht - {}',
+        'portfolio_overview': 'Portfolio-Übersicht - {}',
         'price_fetch_status': '⚠️ Preis-Abruf Status',
         'could_not_fetch': 'Konnten Live-Preise für {} Symbole nicht abrufen. Verwende Standardpreise:',
         'your_portfolio_value': 'Ihr Portfolio-Wert',
