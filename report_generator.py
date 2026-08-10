@@ -16,6 +16,7 @@ from fpdf import FPDF
 import yfinance as yf
 
 from config import STOCKS
+from translations import format_user_display_name
 
 
 # Conservative monthly inflation assumptions for 2025 (approx. 3% annualized)
@@ -279,7 +280,7 @@ class AnnualReportGenerator:
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Helvetica", "B", 18)
         pdf.ln(10)
-        pdf.cell(0, 10, f"{year} Portfolio Report - {user['username'].title()}", ln=1, align="C")
+        pdf.cell(0, 10, f"{year} Portfolio Report - {format_user_display_name(user['username'])}", ln=1, align="C")
 
         # Summary metrics
         pdf.set_text_color(0, 0, 0)

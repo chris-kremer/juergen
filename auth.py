@@ -5,7 +5,7 @@ Authentication system for the portfolio application
 import streamlit as st
 from typing import Optional, Dict
 from config import USERS
-from translations import get_language, get_text
+from translations import format_user_display_name, get_language, get_text
 from login_tracker import login_tracker
 from security import get_configured_password_hash, verify_password
 from ui_theme import build_login_intro
@@ -121,7 +121,7 @@ class AuthSystem:
         if user:
             lang = get_language(user['username'])
             with st.sidebar:
-                st.markdown(f"### {get_text('welcome', lang, user['username'].title())}")
+                st.markdown(f"### {get_text('welcome', lang, format_user_display_name(user['username']))}")
                 
                 if st.button(get_text('logout', lang), use_container_width=True):
                     self.logout()

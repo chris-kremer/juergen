@@ -1,6 +1,6 @@
 import unittest
 
-from translations import get_text
+from translations import format_user_display_name, get_text
 from ui_theme import build_app_css, build_dashboard_header, build_footer, build_login_intro
 
 
@@ -19,6 +19,8 @@ class UIThemeTests(unittest.TestCase):
         self.assertNotIn("<Kremer", html)
         self.assertIn("portfolio-hero", html)
         self.assertIn("PRIVAT PORTFOLIO", build_dashboard_header("kremer", "de"))
+        self.assertIn(">Jürgen</span> Portfolio", build_dashboard_header("juergen", "de"))
+        self.assertEqual(format_user_display_name("juergen"), "Jürgen")
 
     def test_footer_is_quiet_and_localized(self):
         self.assertIn("Private Portfolio", build_footer("en"))
@@ -33,6 +35,13 @@ class UIThemeTests(unittest.TestCase):
     def test_native_metric_cards_reserve_equal_height_for_optional_deltas(self):
         css = build_app_css()
         self.assertIn('[data-testid="stMetric"] {\n    min-height: 141px;', css)
+
+    def test_all_time_high_card_has_replayable_confetti_styles(self):
+        css = build_app_css()
+        self.assertIn(".metric-card--all-time-high", css)
+        self.assertIn(".ath-confetti-layer", css)
+        self.assertIn("@keyframes ath-confetti-fall", css)
+        self.assertIn("prefers-reduced-motion", css)
 
     def test_login_is_minimal_and_has_empty_placeholders(self):
         intro = build_login_intro()

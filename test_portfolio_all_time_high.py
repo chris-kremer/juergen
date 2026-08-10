@@ -1,8 +1,13 @@
 import unittest
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 
-from portfolio_dashboard import calculate_historical_portfolio_peak, is_portfolio_all_time_high
+from portfolio_dashboard import (
+    PortfolioDashboard,
+    calculate_historical_portfolio_peak,
+    is_portfolio_all_time_high,
+)
 
 
 class PortfolioAllTimeHighTests(unittest.TestCase):
@@ -34,6 +39,23 @@ class PortfolioAllTimeHighTests(unittest.TestCase):
         self.assertTrue(is_portfolio_all_time_high(101.0, 100.0))
         self.assertFalse(is_portfolio_all_time_high(99.99, 100.0))
         self.assertFalse(is_portfolio_all_time_high(100.0, None))
+
+    def test_all_time_high_metric_renders_clickable_full_screen_confetti_trigger(self):
+        dashboard = PortfolioDashboard(price_fetcher=MagicMock())
+        with patch("portfolio_dashboard.st.markdown") as markdown:
+            dashboard._show_metric_grid([
+                {
+                    "label": "Ihr Portfolio-Wert",
+                    "value": "€260,000.00",
+                    "delta": "Allzeithoch",
+                    "all_time_high": True,
+                }
+            ])
+
+        html = markdown.call_args.args[0]
+        self.assertIn("metric-card--all-time-high", html)
+        self.assertIn('tabindex="0"', html)
+        self.assertIn("ath-confetti-layer", html)
 
 
 if __name__ == "__main__":

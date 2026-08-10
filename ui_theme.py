@@ -2,6 +2,8 @@
 
 from html import escape
 
+from translations import format_user_display_name
+
 
 def build_app_css() -> str:
     """Return the global Streamlit CSS without touching milestone banners."""
@@ -193,6 +195,76 @@ hr {
     min-height: 141px;
 }
 
+.metric-card--all-time-high {
+    cursor: pointer;
+    outline: none;
+}
+
+.metric-card--all-time-high::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 20%, rgba(255, 224, 139, .48) 48%, transparent 76%);
+    transform: translateX(-150%);
+}
+
+.metric-card--all-time-high:hover,
+.metric-card--all-time-high:focus {
+    z-index: 2;
+    border-color: rgba(166, 120, 45, .72);
+    animation: ath-card-celebrate .85s cubic-bezier(.2,.8,.2,1) both;
+    box-shadow: 0 18px 44px rgba(166, 120, 45, .2), 0 0 0 4px rgba(240, 200, 91, .12);
+}
+
+.metric-card--all-time-high:hover::after,
+.metric-card--all-time-high:focus::after {
+    animation: ath-card-shimmer .8s ease-out both;
+}
+
+.ath-confetti-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.ath-confetti-layer span {
+    position: absolute;
+    top: -5vh;
+    left: var(--ath-x);
+    width: 9px;
+    height: 15px;
+    border-radius: 2px;
+    opacity: 0;
+    background: var(--ath-color);
+}
+
+.metric-grid:has(.metric-card--all-time-high:hover) .ath-confetti-layer span,
+.metric-grid:has(.metric-card--all-time-high:focus) .ath-confetti-layer span {
+    animation: ath-confetti-fall var(--ath-duration) cubic-bezier(.16,.7,.32,1) var(--ath-delay) both;
+}
+
+@keyframes ath-card-celebrate {
+    0% { transform: translateY(0) scale(1); }
+    35% { transform: translateY(-7px) scale(1.025) rotate(-.35deg); }
+    62% { transform: translateY(-4px) scale(1.016) rotate(.25deg); }
+    100% { transform: translateY(-3px) scale(1.012); }
+}
+
+@keyframes ath-card-shimmer {
+    from { transform: translateX(-150%); }
+    to { transform: translateX(150%); }
+}
+
+@keyframes ath-confetti-fall {
+    0% { opacity: 0; transform: translate3d(0, -4vh, 0) rotate(0deg); }
+    10% { opacity: 1; }
+    82% { opacity: 1; }
+    100% { opacity: 0; transform: translate3d(var(--ath-drift), 110vh, 0) rotate(var(--ath-rotation)); }
+}
+
 .metric-card:hover,
 [data-testid="stMetric"]:hover {
     transform: translateY(-2px);
@@ -348,6 +420,9 @@ hr {
 
 @media (prefers-reduced-motion: reduce) {
     .metric-card, [data-testid="stMetric"], .stButton > button { transition: none; }
+    .metric-card--all-time-high:hover,
+    .metric-card--all-time-high:focus { animation: none; transform: none; }
+    .ath-confetti-layer { display: none; }
 }
 
 @media (max-width: 760px) {
@@ -370,7 +445,7 @@ hr {
 
 def build_dashboard_header(username: str, lang: str = "en") -> str:
     """Build a branded portfolio heading that replaces Streamlit's default title."""
-    display_name = escape(username.strip().title())
+    display_name = escape(format_user_display_name(username))
     if lang == "de":
         subtitle = "Wertentwicklung, Allokation und Positionen auf einen Blick."
         badge = "ÜBERSICHT"

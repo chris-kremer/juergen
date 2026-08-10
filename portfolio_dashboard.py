@@ -11,7 +11,7 @@ import plotly.io as pio
 from typing import List, Dict
 from price_fetcher import PriceFetcher, fetch_yfinance_history
 from config import STOCKS
-from translations import get_language, get_text, format_currency, format_currency_change
+from translations import format_user_display_name, get_language, get_text, format_currency, format_currency_change
 from celebration import (
     build_annika_2500_celebration_html,
     build_doubling_celebration_html,
@@ -129,6 +129,7 @@ class PortfolioDashboard:
     def _show_metric_grid(self, metrics: List[Dict]):
         """Render responsive metric cards without Streamlit column truncation."""
         cards = []
+        has_all_time_high = False
         for metric in metrics:
             label = escape(str(metric["label"]))
             value = escape(str(metric["value"]))
@@ -147,15 +148,45 @@ class PortfolioDashboard:
                     prefix = ""
                 delta_html = f'<div class="metric-delta {delta_class}">{prefix}{escape(delta_text)}</div>'
 
+            is_all_time_high = bool(metric.get("all_time_high"))
+            has_all_time_high = has_all_time_high or is_all_time_high
+            card_class = "metric-card metric-card--all-time-high" if is_all_time_high else "metric-card"
+            interactive = (
+                f' tabindex="0" role="button" aria-label="{label}: {escape(str(delta or ""))}"'
+                if is_all_time_high
+                else ""
+            )
             cards.append(
-                f'<div class="metric-card">'
+                f'<div class="{card_class}"{interactive}>'
                 f'<div class="metric-label">{label}</div>'
                 f'<div class="metric-value">{value}</div>'
                 f'{delta_html}'
                 f'</div>'
             )
 
-        st.markdown(f'<div class="metric-grid">{"".join(cards)}</div>', unsafe_allow_html=True)
+        confetti_html = ""
+        if has_all_time_high:
+            palette = ("#176b4d", "#d7a83f", "#ec6b5f", "#4f83cc", "#8b68b8", "#f0c85b")
+            pieces = []
+            for index in range(30):
+                left = (index * 37 + 7) % 100
+                drift = ((index * 29) % 31) - 15
+                delay = (index % 8) * 0.045
+                duration = 1.35 + (index % 5) * 0.13
+                rotation = 260 + (index % 7) * 70
+                pieces.append(
+                    '<span style="'
+                    f'--ath-x:{left}vw;--ath-drift:{drift}vw;--ath-delay:{delay:.3f}s;'
+                    f'--ath-duration:{duration:.2f}s;--ath-rotation:{rotation}deg;'
+                    f'--ath-color:{palette[index % len(palette)]}'
+                    '"></span>'
+                )
+            confetti_html = f'<div class="ath-confetti-layer" aria-hidden="true">{"".join(pieces)}</div>'
+
+        st.markdown(
+            f'<div class="metric-grid">{"".join(cards)}{confetti_html}</div>',
+            unsafe_allow_html=True,
+        )
 
     def _get_user_historical_portfolio_peak(self, stocks: List[Dict], user: Dict):
         """Calculate the user's peak daily-close value since their first investment."""
@@ -265,6 +296,7 @@ class PortfolioDashboard:
                 "label": get_text('your_portfolio_value', lang),
                 "value": format_currency(user_portfolio_value, lang),
                 "delta": all_time_high_label,
+                "all_time_high": bool(all_time_high_label),
             },
             {
                 "label": get_text('total_return', lang),
@@ -382,7 +414,7 @@ class PortfolioDashboard:
                 return_percentage = (total_return / initial_investment * 100) if initial_investment > 0 else 0
                 
                 user_data.append({
-                    'User': user_info['username'].title(),
+                    'User': format_user_display_name(user_info['username']),
                     'Portfolio Value': user_value,
                     'Initial Investment': initial_investment,
                     'Total Return': total_return,
@@ -1058,7 +1090,7 @@ class PortfolioDashboard:
                 annualized_return = (((tranche_current_value / amount_invested) ** (1 / years_invested)) - 1) * 100 if years_invested > 0 and amount_invested > 0 else 0
 
                 tranche_rows.append({
-                    get_text('username', lang): user_config['username'].title(),
+                    get_text('username', lang): format_user_display_name(user_config['username']),
                     get_text('investment_date', lang): tranche['date'],
                     get_text('amount_invested', lang): amount_invested,
                     get_text('current_value', lang): tranche_current_value,

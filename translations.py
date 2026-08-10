@@ -7,6 +7,15 @@ def get_language(username: str) -> str:
     german_users = ['juergen', 'kremer']
     return 'de' if username in german_users else 'en'
 
+
+def format_user_display_name(username: str) -> str:
+    """Return a correctly styled display name without changing login identifiers."""
+    normalized = username.strip().lower()
+    if normalized == 'juergen':
+        return 'Jürgen'
+    return username.strip().title()
+
+
 TRANSLATIONS = {
     'en': {
         # Auth
