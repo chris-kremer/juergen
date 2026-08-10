@@ -29,6 +29,10 @@ class UIThemeTests(unittest.TestCase):
         self.assertNotIn(".metric-card:first-child", css)
         self.assertNotIn(".metric-card:nth-child(2)", css)
 
+    def test_native_metric_cards_reserve_equal_height_for_optional_deltas(self):
+        css = build_app_css()
+        self.assertIn('[data-testid="stMetric"] {\n    min-height: 141px;', css)
+
     def test_login_is_minimal_and_has_empty_placeholders(self):
         intro = build_login_intro()
         self.assertIn("Portfolio Login", intro)

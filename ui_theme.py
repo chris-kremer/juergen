@@ -189,6 +189,10 @@ hr {
     transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
 
+[data-testid="stMetric"] {
+    min-height: 141px;
+}
+
 .metric-card:hover,
 [data-testid="stMetric"]:hover {
     transform: translateY(-2px);
