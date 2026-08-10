@@ -175,8 +175,11 @@ class PriceFetcher:
             if progress_bar:
                 progress_bar.progress(progress_percentage)
             
+        # Remove all loading UI as soon as the final quote is available.
+        if progress_bar:
+            progress_bar.empty()
         if status_text:
-            status_text.text(f"✅ Completed! ({total_stocks}/{total_stocks})")
+            status_text.empty()
         if progress_container:
             progress_container.empty()
         
