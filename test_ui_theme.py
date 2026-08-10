@@ -18,6 +18,7 @@ class UIThemeTests(unittest.TestCase):
         self.assertIn("Kremer &amp; Co", html)
         self.assertNotIn("<Kremer", html)
         self.assertIn("portfolio-hero", html)
+        self.assertIn("PRIVAT PORTFOLIO", build_dashboard_header("kremer", "de"))
 
     def test_footer_is_quiet_and_localized(self):
         self.assertIn("Private Portfolio", build_footer("en"))

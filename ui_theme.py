@@ -374,13 +374,15 @@ def build_dashboard_header(username: str, lang: str = "en") -> str:
     if lang == "de":
         subtitle = "Wertentwicklung, Allokation und Positionen auf einen Blick."
         badge = "ÜBERSICHT"
+        eyebrow = "PRIVAT PORTFOLIO"
     else:
         subtitle = "Value, performance and allocation in one clear view."
         badge = "OVERVIEW"
+        eyebrow = "PRIVATE PORTFOLIO"
     return f"""
 <div class="portfolio-hero">
     <div class="portfolio-hero__top">
-        <span class="portfolio-hero__eyebrow">PRIVATE PORTFOLIO</span>
+        <span class="portfolio-hero__eyebrow">{eyebrow}</span>
         <span class="portfolio-hero__badge">{badge}</span>
     </div>
     <h1><span>{display_name}</span> Portfolio</h1>
