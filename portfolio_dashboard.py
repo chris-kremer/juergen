@@ -17,6 +17,7 @@ from celebration import (
     build_doubling_celebration_html,
     resolve_doubling_celebration_return,
     should_show_annika_2500_celebration,
+    should_show_celebration_divider,
 )
 from ui_theme import build_dashboard_header
 
@@ -370,7 +371,8 @@ class PortfolioDashboard:
                 unsafe_allow_html=True,
             )
 
-        st.markdown("---")
+        if should_show_celebration_divider(celebration_return):
+            st.markdown("---")
 
         # Investment tranche performance (moved up for better visibility)
         self.show_investment_tranches(user, stocks_with_prices, lang)

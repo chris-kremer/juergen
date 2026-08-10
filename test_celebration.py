@@ -5,6 +5,7 @@ from celebration import (
     build_doubling_celebration_html,
     build_doubling_message,
     resolve_doubling_celebration_return,
+    should_show_celebration_divider,
     should_show_annika_2500_celebration,
     should_show_doubling_celebration,
 )
@@ -55,6 +56,10 @@ class DoublingCelebrationTests(unittest.TestCase):
         self.assertIsNone(
             resolve_doubling_celebration_return("juergen", 98.9, preview_requested=True)
         )
+
+    def test_extra_divider_only_appears_with_doubling_message(self):
+        self.assertFalse(should_show_celebration_divider(None))
+        self.assertTrue(should_show_celebration_divider(100.0))
 
     def test_annika_2500_milestone_has_a_bounded_window(self):
         self.assertFalse(should_show_annika_2500_celebration("annika", 2499.99))

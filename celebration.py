@@ -34,6 +34,11 @@ def resolve_doubling_celebration_return(
     return None
 
 
+def should_show_celebration_divider(celebration_return: float | None) -> bool:
+    """Show the extra metric/message divider only with the doubling banner."""
+    return celebration_return is not None
+
+
 def build_doubling_message(return_percentage: float) -> str:
     """Build the German milestone message using a German decimal separator."""
     formatted_return = f"{float(return_percentage):.1f}".replace(".", ",")
