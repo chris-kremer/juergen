@@ -221,6 +221,31 @@ hr {
     animation: ath-card-shimmer .8s ease-out 3.55s both;
 }
 
+.ath-celebration-copy {
+    position: absolute;
+    top: .75rem;
+    right: .8rem;
+    z-index: 3;
+    padding: .42rem .7rem;
+    border: 1px solid rgba(255,255,255,.45);
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(135deg, #087443, #16a267);
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,.12);
+    font-size: .78rem;
+    font-weight: 850;
+    letter-spacing: .025em;
+    opacity: 0;
+    transform: scale(.45) rotate(-9deg);
+    transform-origin: center;
+    white-space: nowrap;
+}
+
+.metric-card--all-time-high:hover .ath-celebration-copy,
+.metric-card--all-time-high:focus .ath-celebration-copy {
+    animation: ath-record-reveal 1.2s cubic-bezier(.17,.89,.32,1.35) 3.8s both;
+}
+
 .ath-confetti-layer {
     position: fixed;
     inset: 0;
@@ -248,36 +273,44 @@ hr {
 @keyframes ath-card-celebrate {
     0% {
         transform: translateY(0) scale(1);
-        box-shadow: 0 8px 28px rgba(24, 38, 29, .045), 0 0 0 0 rgba(23, 107, 77, 0);
+        box-shadow: 0 8px 28px rgba(24, 38, 29, .045), inset 0 0 0 0 rgba(23, 107, 77, 0), inset 0 0 0 rgba(23, 107, 77, 0);
     }
     25% {
         transform: translateY(-1px) scale(1.006);
-        box-shadow: 0 12px 34px rgba(23, 107, 77, .1), 0 0 0 5px rgba(23, 107, 77, .08);
+        box-shadow: 0 9px 28px rgba(24, 38, 29, .055), inset 0 0 0 1px rgba(23, 107, 77, .18), inset 0 0 20px rgba(23, 107, 77, .08);
     }
     50% {
         transform: translateY(-2px) scale(1.012);
-        box-shadow: 0 16px 40px rgba(23, 107, 77, .17), 0 0 0 9px rgba(23, 107, 77, .12);
+        box-shadow: 0 10px 30px rgba(24, 38, 29, .06), inset 0 0 0 2px rgba(23, 107, 77, .28), inset 0 0 38px rgba(23, 107, 77, .14);
     }
     72% {
         transform: translateY(-4px) scale(1.024);
-        box-shadow: 0 22px 52px rgba(23, 107, 77, .24), 0 0 0 14px rgba(23, 107, 77, .16);
+        box-shadow: 0 11px 32px rgba(24, 38, 29, .065), inset 0 0 0 3px rgba(23, 107, 77, .4), inset 0 0 58px rgba(23, 107, 77, .21);
     }
     80% {
         transform: translateY(-8px) scale(1.08);
-        box-shadow: 0 28px 64px rgba(23, 107, 77, .32), 0 0 0 19px rgba(23, 107, 77, .18);
+        box-shadow: 0 12px 34px rgba(24, 38, 29, .07), inset 0 0 0 4px rgba(23, 107, 77, .58), inset 0 0 76px rgba(23, 107, 77, .3);
     }
     88% {
         transform: translateY(-6px) scale(1.068);
-        box-shadow: 0 26px 60px rgba(23, 107, 77, .29), 0 0 0 16px rgba(23, 107, 77, .16);
+        box-shadow: 0 12px 34px rgba(24, 38, 29, .07), inset 0 0 0 4px rgba(23, 107, 77, .52), inset 0 0 68px rgba(23, 107, 77, .26);
     }
     96% {
         transform: translateY(-5px) scale(1.055);
-        box-shadow: 0 23px 54px rgba(23, 107, 77, .25), 0 0 0 12px rgba(23, 107, 77, .13);
+        box-shadow: 0 11px 32px rgba(24, 38, 29, .065), inset 0 0 0 3px rgba(23, 107, 77, .44), inset 0 0 58px rgba(23, 107, 77, .21);
     }
     100% {
         transform: translateY(-3px) scale(1.012);
-        box-shadow: 0 16px 42px rgba(23, 107, 77, .18), 0 0 0 5px rgba(23, 107, 77, .08);
+        box-shadow: 0 9px 30px rgba(24, 38, 29, .055), inset 0 0 0 2px rgba(23, 107, 77, .25), inset 0 0 28px rgba(23, 107, 77, .11);
     }
+}
+
+@keyframes ath-record-reveal {
+    0% { opacity: 0; transform: scale(.45) rotate(-9deg); }
+    28% { opacity: 1; transform: scale(1.18) rotate(3deg); }
+    52% { opacity: 1; transform: scale(.94) rotate(-2deg); }
+    76% { opacity: 1; transform: scale(1.06) rotate(1deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
 }
 
 @keyframes ath-card-shimmer {
@@ -455,6 +488,7 @@ hr {
     .metric-card, [data-testid="stMetric"], .stButton > button { transition: none; }
     .metric-card--all-time-high:hover,
     .metric-card--all-time-high:focus { animation: none; transform: none; }
+    .metric-card--all-time-high .ath-celebration-copy { opacity: 1; transform: none; }
     .ath-confetti-layer { display: none; }
 }
 

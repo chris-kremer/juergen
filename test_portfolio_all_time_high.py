@@ -55,6 +55,7 @@ class PortfolioAllTimeHighTests(unittest.TestCase):
                     "delta": "Allzeithoch",
                     "delta_class": "positive",
                     "all_time_high": True,
+                    "celebration_text": "Neuer Rekord! 🎉",
                 }
             ])
 
@@ -63,6 +64,7 @@ class PortfolioAllTimeHighTests(unittest.TestCase):
         self.assertIn('tabindex="0"', html)
         self.assertIn("ath-confetti-layer", html)
         self.assertIn('metric-delta positive">Allzeithoch', html)
+        self.assertIn('ath-celebration-copy">Neuer Rekord! 🎉', html)
 
 
 if __name__ == "__main__":

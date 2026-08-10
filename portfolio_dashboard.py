@@ -162,6 +162,12 @@ class PortfolioDashboard:
 
             is_all_time_high = bool(metric.get("all_time_high"))
             has_all_time_high = has_all_time_high or is_all_time_high
+            celebration_text = metric.get("celebration_text")
+            celebration_html = (
+                f'<div class="ath-celebration-copy">{escape(str(celebration_text))}</div>'
+                if is_all_time_high and celebration_text
+                else ""
+            )
             card_class = "metric-card metric-card--all-time-high" if is_all_time_high else "metric-card"
             interactive = (
                 f' tabindex="0" role="button" aria-label="{label}: {escape(str(delta or ""))}"'
@@ -173,6 +179,7 @@ class PortfolioDashboard:
                 f'<div class="metric-label">{label}</div>'
                 f'<div class="metric-value">{value}</div>'
                 f'{delta_html}'
+                f'{celebration_html}'
                 f'</div>'
             )
 
@@ -314,6 +321,7 @@ class PortfolioDashboard:
                 "delta": all_time_high_label,
                 "delta_class": "positive",
                 "all_time_high": bool(all_time_high_label),
+                "celebration_text": get_text('all_time_high_celebration', lang),
             },
             {
                 "label": get_text('total_return', lang),
