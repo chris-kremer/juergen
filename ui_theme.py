@@ -230,7 +230,7 @@ hr {
     border: 1px solid rgba(255,255,255,.45);
     border-radius: 999px;
     color: #fff;
-    background: linear-gradient(135deg, #087443, #16a267);
+    background: linear-gradient(135deg, #008f4e, #13cb72);
     box-shadow: inset 0 -2px 0 rgba(0,0,0,.12);
     font-size: .78rem;
     font-weight: 850;
@@ -243,7 +243,7 @@ hr {
 
 .metric-card--all-time-high:hover .ath-celebration-copy,
 .metric-card--all-time-high:focus .ath-celebration-copy {
-    animation: ath-record-reveal 1.2s cubic-bezier(.17,.89,.32,1.35) 3.8s both;
+    animation: ath-record-reveal 2s cubic-bezier(.17,.89,.32,1.2) 3.8s both;
 }
 
 .ath-confetti-layer {
@@ -277,40 +277,41 @@ hr {
     }
     25% {
         transform: translateY(-1px) scale(1.006);
-        box-shadow: 0 9px 28px rgba(24, 38, 29, .055), inset 0 0 0 1px rgba(23, 107, 77, .18), inset 0 0 20px rgba(23, 107, 77, .08);
+        box-shadow: 0 9px 28px rgba(24, 38, 29, .055), inset 0 0 0 1px rgba(0, 157, 86, .28), inset 0 0 24px rgba(0, 190, 104, .14);
     }
     50% {
         transform: translateY(-2px) scale(1.012);
-        box-shadow: 0 10px 30px rgba(24, 38, 29, .06), inset 0 0 0 2px rgba(23, 107, 77, .28), inset 0 0 38px rgba(23, 107, 77, .14);
+        box-shadow: 0 10px 30px rgba(24, 38, 29, .06), inset 0 0 0 2px rgba(0, 157, 86, .42), inset 0 0 44px rgba(0, 190, 104, .24);
     }
     72% {
         transform: translateY(-4px) scale(1.024);
-        box-shadow: 0 11px 32px rgba(24, 38, 29, .065), inset 0 0 0 3px rgba(23, 107, 77, .4), inset 0 0 58px rgba(23, 107, 77, .21);
+        box-shadow: 0 11px 32px rgba(24, 38, 29, .065), inset 0 0 0 3px rgba(0, 157, 86, .6), inset 0 0 64px rgba(0, 190, 104, .35);
     }
     80% {
         transform: translateY(-8px) scale(1.08);
-        box-shadow: 0 12px 34px rgba(24, 38, 29, .07), inset 0 0 0 4px rgba(23, 107, 77, .58), inset 0 0 76px rgba(23, 107, 77, .3);
+        box-shadow: 0 12px 34px rgba(24, 38, 29, .07), inset 0 0 0 4px rgba(0, 157, 86, .82), inset 0 0 82px rgba(0, 205, 112, .5);
     }
     88% {
         transform: translateY(-6px) scale(1.068);
-        box-shadow: 0 12px 34px rgba(24, 38, 29, .07), inset 0 0 0 4px rgba(23, 107, 77, .52), inset 0 0 68px rgba(23, 107, 77, .26);
+        box-shadow: 0 12px 34px rgba(24, 38, 29, .07), inset 0 0 0 4px rgba(0, 157, 86, .74), inset 0 0 74px rgba(0, 205, 112, .43);
     }
     96% {
         transform: translateY(-5px) scale(1.055);
-        box-shadow: 0 11px 32px rgba(24, 38, 29, .065), inset 0 0 0 3px rgba(23, 107, 77, .44), inset 0 0 58px rgba(23, 107, 77, .21);
+        box-shadow: 0 11px 32px rgba(24, 38, 29, .065), inset 0 0 0 3px rgba(0, 157, 86, .62), inset 0 0 62px rgba(0, 190, 104, .35);
     }
     100% {
         transform: translateY(-3px) scale(1.012);
-        box-shadow: 0 9px 30px rgba(24, 38, 29, .055), inset 0 0 0 2px rgba(23, 107, 77, .25), inset 0 0 28px rgba(23, 107, 77, .11);
+        box-shadow: 0 9px 30px rgba(24, 38, 29, .055), inset 0 0 0 2px rgba(0, 157, 86, .38), inset 0 0 34px rgba(0, 190, 104, .18);
     }
 }
 
 @keyframes ath-record-reveal {
     0% { opacity: 0; transform: scale(.45) rotate(-9deg); }
-    28% { opacity: 1; transform: scale(1.18) rotate(3deg); }
-    52% { opacity: 1; transform: scale(.94) rotate(-2deg); }
-    76% { opacity: 1; transform: scale(1.06) rotate(1deg); }
-    100% { opacity: 1; transform: scale(1) rotate(0); }
+    14% { opacity: 1; transform: scale(1.18) rotate(3deg); }
+    28% { opacity: 1; transform: scale(.94) rotate(-2deg); }
+    42% { opacity: 1; transform: scale(1.06) rotate(1deg); }
+    56%, 82% { opacity: 1; transform: scale(1) rotate(0); }
+    100% { opacity: 0; transform: scale(.92) rotate(0); }
 }
 
 @keyframes ath-card-shimmer {
@@ -363,10 +364,11 @@ hr {
 .metric-delta.negative { color: var(--negative); }
 .metric-delta.neutral { color: var(--muted); }
 .metric-card--all-time-high .metric-delta {
-    color: var(--positive);
+    color: #009d56;
     font-size: .96rem !important;
     font-weight: 820 !important;
     letter-spacing: .025em;
+    text-shadow: 0 0 14px rgba(0, 205, 112, .24);
 }
 
 [data-testid="stPlotlyChart"],
@@ -488,7 +490,6 @@ hr {
     .metric-card, [data-testid="stMetric"], .stButton > button { transition: none; }
     .metric-card--all-time-high:hover,
     .metric-card--all-time-high:focus { animation: none; transform: none; }
-    .metric-card--all-time-high .ath-celebration-copy { opacity: 1; transform: none; }
     .ath-confetti-layer { display: none; }
 }
 

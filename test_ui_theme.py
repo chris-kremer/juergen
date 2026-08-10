@@ -45,6 +45,8 @@ class UIThemeTests(unittest.TestCase):
         self.assertIn("calc(4s + var(--ath-delay))", css)
         self.assertIn("inset 0 0", css)
         self.assertIn("@keyframes ath-record-reveal", css)
+        self.assertIn("ath-record-reveal 2s", css)
+        self.assertIn("100% { opacity: 0; transform: scale(.92) rotate(0); }", css)
         self.assertIn("prefers-reduced-motion", css)
 
     def test_login_is_minimal_and_has_empty_placeholders(self):
