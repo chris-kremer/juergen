@@ -155,6 +155,9 @@ class PortfolioDashboard:
                 else:
                     delta_class = "neutral"
                     prefix = ""
+                explicit_delta_class = metric.get("delta_class")
+                if explicit_delta_class in {"positive", "negative", "neutral"}:
+                    delta_class = explicit_delta_class
                 delta_html = f'<div class="metric-delta {delta_class}">{prefix}{escape(delta_text)}</div>'
 
             is_all_time_high = bool(metric.get("all_time_high"))
@@ -309,6 +312,7 @@ class PortfolioDashboard:
                 "label": get_text('your_portfolio_value', lang),
                 "value": format_currency(user_portfolio_value, lang),
                 "delta": all_time_high_label,
+                "delta_class": "positive",
                 "all_time_high": bool(all_time_high_label),
             },
             {

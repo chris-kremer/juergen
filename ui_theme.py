@@ -205,21 +205,20 @@ hr {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(110deg, transparent 20%, rgba(255, 224, 139, .48) 48%, transparent 76%);
+    background: linear-gradient(110deg, transparent 20%, rgba(119, 224, 169, .48) 48%, transparent 76%);
     transform: translateX(-150%);
 }
 
 .metric-card--all-time-high:hover,
 .metric-card--all-time-high:focus {
     z-index: 2;
-    border-color: rgba(166, 120, 45, .72);
-    animation: ath-card-celebrate .85s cubic-bezier(.2,.8,.2,1) both;
-    box-shadow: 0 18px 44px rgba(166, 120, 45, .2), 0 0 0 4px rgba(240, 200, 91, .12);
+    border-color: rgba(23, 107, 77, .82) !important;
+    animation: ath-card-celebrate 5s cubic-bezier(.2,.8,.2,1) both;
 }
 
 .metric-card--all-time-high:hover::after,
 .metric-card--all-time-high:focus::after {
-    animation: ath-card-shimmer .8s ease-out both;
+    animation: ath-card-shimmer .8s ease-out 3.55s both;
 }
 
 .ath-confetti-layer {
@@ -243,14 +242,42 @@ hr {
 
 .metric-grid:has(.metric-card--all-time-high:hover) .ath-confetti-layer span,
 .metric-grid:has(.metric-card--all-time-high:focus) .ath-confetti-layer span {
-    animation: ath-confetti-fall var(--ath-duration) cubic-bezier(.16,.7,.32,1) var(--ath-delay) both;
+    animation: ath-confetti-fall var(--ath-duration) cubic-bezier(.16,.7,.32,1) calc(4s + var(--ath-delay)) both;
 }
 
 @keyframes ath-card-celebrate {
-    0% { transform: translateY(0) scale(1); }
-    35% { transform: translateY(-7px) scale(1.025) rotate(-.35deg); }
-    62% { transform: translateY(-4px) scale(1.016) rotate(.25deg); }
-    100% { transform: translateY(-3px) scale(1.012); }
+    0% {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 8px 28px rgba(24, 38, 29, .045), 0 0 0 0 rgba(23, 107, 77, 0);
+    }
+    25% {
+        transform: translateY(-1px) scale(1.006);
+        box-shadow: 0 12px 34px rgba(23, 107, 77, .1), 0 0 0 5px rgba(23, 107, 77, .08);
+    }
+    50% {
+        transform: translateY(-2px) scale(1.012);
+        box-shadow: 0 16px 40px rgba(23, 107, 77, .17), 0 0 0 9px rgba(23, 107, 77, .12);
+    }
+    72% {
+        transform: translateY(-4px) scale(1.024);
+        box-shadow: 0 22px 52px rgba(23, 107, 77, .24), 0 0 0 14px rgba(23, 107, 77, .16);
+    }
+    80% {
+        transform: translateY(-8px) scale(1.08);
+        box-shadow: 0 28px 64px rgba(23, 107, 77, .32), 0 0 0 19px rgba(23, 107, 77, .18);
+    }
+    88% {
+        transform: translateY(-6px) scale(1.068);
+        box-shadow: 0 26px 60px rgba(23, 107, 77, .29), 0 0 0 16px rgba(23, 107, 77, .16);
+    }
+    96% {
+        transform: translateY(-5px) scale(1.055);
+        box-shadow: 0 23px 54px rgba(23, 107, 77, .25), 0 0 0 12px rgba(23, 107, 77, .13);
+    }
+    100% {
+        transform: translateY(-3px) scale(1.012);
+        box-shadow: 0 16px 42px rgba(23, 107, 77, .18), 0 0 0 5px rgba(23, 107, 77, .08);
+    }
 }
 
 @keyframes ath-card-shimmer {
@@ -302,6 +329,12 @@ hr {
 .metric-delta.positive { color: var(--positive); }
 .metric-delta.negative { color: var(--negative); }
 .metric-delta.neutral { color: var(--muted); }
+.metric-card--all-time-high .metric-delta {
+    color: var(--positive);
+    font-size: .96rem !important;
+    font-weight: 820 !important;
+    letter-spacing: .025em;
+}
 
 [data-testid="stPlotlyChart"],
 [data-testid="stDataFrame"] {

@@ -53,6 +53,7 @@ class PortfolioAllTimeHighTests(unittest.TestCase):
                     "label": "Ihr Portfolio-Wert",
                     "value": "€260,000.00",
                     "delta": "Allzeithoch",
+                    "delta_class": "positive",
                     "all_time_high": True,
                 }
             ])
@@ -61,6 +62,7 @@ class PortfolioAllTimeHighTests(unittest.TestCase):
         self.assertIn("metric-card--all-time-high", html)
         self.assertIn('tabindex="0"', html)
         self.assertIn("ath-confetti-layer", html)
+        self.assertIn('metric-delta positive">Allzeithoch', html)
 
 
 if __name__ == "__main__":
