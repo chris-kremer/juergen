@@ -24,6 +24,11 @@ class UIThemeTests(unittest.TestCase):
         self.assertIn("Privates Portfolio", build_footer("de"))
         self.assertIn("Yahoo Finance", build_footer("de"))
 
+    def test_metric_cards_use_one_consistent_surface(self):
+        css = build_app_css()
+        self.assertNotIn(".metric-card:first-child", css)
+        self.assertNotIn(".metric-card:nth-child(2)", css)
+
     def test_login_is_minimal_and_has_empty_placeholders(self):
         intro = build_login_intro()
         self.assertIn("Portfolio access", intro)

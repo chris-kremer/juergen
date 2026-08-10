@@ -196,15 +196,6 @@ hr {
     box-shadow: var(--shadow);
 }
 
-.metric-card:first-child {
-    border-color: rgba(23, 107, 77, .27);
-    background: linear-gradient(145deg, #f9fcfa, #eaf3ed);
-}
-
-.metric-card:nth-child(2) {
-    background: linear-gradient(145deg, #fff, #faf6ec);
-}
-
 .metric-label,
 [data-testid="stMetricLabel"] {
     color: var(--muted) !important;
