@@ -64,6 +64,15 @@ def is_portfolio_all_time_high(current_value: float, historical_peak) -> bool:
     return historical_peak is not None and current_value >= historical_peak
 
 
+def resolve_all_time_high_state(
+    current_value: float,
+    historical_peak,
+    preview_requested: bool = False,
+) -> bool:
+    """Resolve the real or explicitly simulated all-time-high display state."""
+    return preview_requested or is_portfolio_all_time_high(current_value, historical_peak)
+
+
 class PortfolioDashboard:
     def __init__(self, price_fetcher: PriceFetcher):
         self.price_fetcher = price_fetcher
@@ -226,6 +235,9 @@ class PortfolioDashboard:
         preview_requested = bool(
             st.session_state.pop('kremer_doubling_preview_requested', False)
         )
+        all_time_high_preview_requested = bool(
+            st.session_state.pop('all_time_high_preview_requested', False)
+        )
         
         # Branded dashboard header
         st.markdown(
@@ -283,13 +295,14 @@ class PortfolioDashboard:
         top_value_stock = max(stock_changes, key=lambda x: x['daily_change_value']) if stock_changes else None
 
         historical_peak = None
-        if not failed_symbols:
+        if not failed_symbols and not all_time_high_preview_requested:
             historical_peak = self._get_user_historical_portfolio_peak(stocks_with_prices, user)
-        all_time_high_label = (
-            get_text('all_time_high', lang)
-            if is_portfolio_all_time_high(user_portfolio_value, historical_peak)
-            else None
+        all_time_high_active = resolve_all_time_high_state(
+            user_portfolio_value,
+            historical_peak,
+            preview_requested=all_time_high_preview_requested,
         )
+        all_time_high_label = get_text('all_time_high', lang) if all_time_high_active else None
 
         self._show_metric_grid([
             {
@@ -390,6 +403,13 @@ class PortfolioDashboard:
                     key='kremer_doubling_preview_button',
                     on_click=lambda: st.session_state.__setitem__(
                         'kremer_doubling_preview_requested', True
+                    ),
+                )
+                st.button(
+                    get_text('preview_all_time_high', lang),
+                    key='all_time_high_preview_button',
+                    on_click=lambda: st.session_state.__setitem__(
+                        'all_time_high_preview_requested', True
                     ),
                 )
 

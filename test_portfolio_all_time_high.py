@@ -7,6 +7,7 @@ from portfolio_dashboard import (
     PortfolioDashboard,
     calculate_historical_portfolio_peak,
     is_portfolio_all_time_high,
+    resolve_all_time_high_state,
 )
 
 
@@ -39,6 +40,10 @@ class PortfolioAllTimeHighTests(unittest.TestCase):
         self.assertTrue(is_portfolio_all_time_high(101.0, 100.0))
         self.assertFalse(is_portfolio_all_time_high(99.99, 100.0))
         self.assertFalse(is_portfolio_all_time_high(100.0, None))
+
+    def test_preview_can_simulate_the_state_without_changing_values(self):
+        self.assertTrue(resolve_all_time_high_state(99.0, 100.0, preview_requested=True))
+        self.assertFalse(resolve_all_time_high_state(99.0, 100.0, preview_requested=False))
 
     def test_all_time_high_metric_renders_clickable_full_screen_confetti_trigger(self):
         dashboard = PortfolioDashboard(price_fetcher=MagicMock())
