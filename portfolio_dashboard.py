@@ -23,6 +23,47 @@ from ui_theme import build_dashboard_header
 pio.templates.default = "plotly_white"
 px.defaults.template = "plotly_white"
 
+
+def calculate_historical_portfolio_peak(histories: Dict, stocks: List[Dict]):
+    """Return the peak daily-close value for the current portfolio composition."""
+    non_cash_stocks = [stock for stock in stocks if stock["symbol"] != "CASH"]
+    if any(
+        stock["symbol"] not in histories
+        or histories[stock["symbol"]] is None
+        or histories[stock["symbol"]].empty
+        for stock in non_cash_stocks
+    ):
+        return None
+
+    position_series = []
+    for stock in non_cash_stocks:
+        closes = histories[stock["symbol"]]["Close"].astype(float)
+        closes.name = stock["symbol"]
+        position_series.append(closes * stock["quantity"])
+
+    if not position_series:
+        return None
+
+    # Only compare dates where every current holding has a valid close. This
+    # avoids falsely declaring a high from a partially loaded history.
+    portfolio_history = pd.concat(position_series, axis=1).sort_index().ffill().dropna()
+    if portfolio_history.empty:
+        return None
+
+    cash_value = sum(
+        stock["quantity"] * stock.get("price", 1.0)
+        for stock in stocks
+        if stock["symbol"] == "CASH"
+    )
+    daily_totals = portfolio_history.sum(axis=1) + cash_value
+    return float(daily_totals.max())
+
+
+def is_portfolio_all_time_high(current_value: float, historical_peak) -> bool:
+    """Return True only when a trustworthy historical peak is available."""
+    return historical_peak is not None and current_value >= historical_peak
+
+
 class PortfolioDashboard:
     def __init__(self, price_fetcher: PriceFetcher):
         self.price_fetcher = price_fetcher
@@ -115,6 +156,37 @@ class PortfolioDashboard:
             )
 
         st.markdown(f'<div class="metric-grid">{"".join(cards)}</div>', unsafe_allow_html=True)
+
+    def _get_user_historical_portfolio_peak(self, stocks: List[Dict], user: Dict):
+        """Calculate the user's peak daily-close value since their first investment."""
+        from datetime import date, datetime, timedelta
+
+        investment_dates = [
+            payment.get("date")
+            for payment in user.get("payments", [])
+            if payment.get("date")
+        ]
+        if user.get("paid_date"):
+            investment_dates.append(user["paid_date"])
+        if not investment_dates:
+            return None
+
+        start_date = datetime.strptime(min(investment_dates), "%Y-%m-%d").date()
+        end_date = date.today() + timedelta(days=1)
+        histories = {}
+        for stock in stocks:
+            if stock["symbol"] == "CASH":
+                continue
+            histories[stock["symbol"]] = fetch_yfinance_history(
+                stock["symbol"],
+                start=start_date,
+                end=end_date,
+            )
+
+        total_peak = calculate_historical_portfolio_peak(histories, stocks)
+        if total_peak is None:
+            return None
+        return total_peak * user["portfolio_percentage"]
     
     def show_dashboard(self, user: Dict, stocks_with_prices: List[Dict], failed_symbols: List[str]):
         """Display the main portfolio dashboard"""
@@ -179,10 +251,20 @@ class PortfolioDashboard:
         top_pct_stock = max(stock_changes, key=lambda x: x['daily_change_pct']) if stock_changes else None
         top_value_stock = max(stock_changes, key=lambda x: x['daily_change_value']) if stock_changes else None
 
+        historical_peak = None
+        if not failed_symbols:
+            historical_peak = self._get_user_historical_portfolio_peak(stocks_with_prices, user)
+        all_time_high_label = (
+            get_text('all_time_high', lang)
+            if is_portfolio_all_time_high(user_portfolio_value, historical_peak)
+            else None
+        )
+
         self._show_metric_grid([
             {
                 "label": get_text('your_portfolio_value', lang),
                 "value": format_currency(user_portfolio_value, lang),
+                "delta": all_time_high_label,
             },
             {
                 "label": get_text('total_return', lang),
