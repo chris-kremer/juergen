@@ -10,12 +10,12 @@ def get_language(username: str) -> str:
 TRANSLATIONS = {
     'en': {
         # Auth
-        'portfolio_login': '🏦 Portfolio Login',
-        'please_log_in': 'Please log in to view your portfolio',
-        'username': 'Username',
+        'portfolio_login': 'Portfolio Login',
+        'please_log_in': '',
+        'username': 'User',
         'password': 'Password',
-        'enter_username': 'Enter your username',
-        'enter_password': 'Enter your password',
+        'enter_username': '',
+        'enter_password': '',
         'login': 'Login',
         'login_successful': 'Login successful!',
         'invalid_credentials': 'Invalid username or password',
@@ -142,12 +142,12 @@ TRANSLATIONS = {
     },
     'de': {
         # Auth
-        'portfolio_login': '🏦 Portfolio Anmeldung',
-        'please_log_in': 'Bitte melden Sie sich an, um Ihr Portfolio zu sehen',
-        'username': 'Benutzername',
+        'portfolio_login': 'Portfolio Anmeldung',
+        'please_log_in': '',
+        'username': 'User',
         'password': 'Passwort',
-        'enter_username': 'Benutzername eingeben',
-        'enter_password': 'Passwort eingeben',
+        'enter_username': '',
+        'enter_password': '',
         'login': 'Anmelden',
         'login_successful': 'Anmeldung erfolgreich!',
         'invalid_credentials': 'Ungültiger Benutzername oder Passwort',

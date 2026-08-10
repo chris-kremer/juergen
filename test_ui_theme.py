@@ -1,6 +1,7 @@
 import unittest
 
-from ui_theme import build_app_css, build_dashboard_header, build_footer
+from translations import get_text
+from ui_theme import build_app_css, build_dashboard_header, build_footer, build_login_intro
 
 
 class UIThemeTests(unittest.TestCase):
@@ -22,6 +23,15 @@ class UIThemeTests(unittest.TestCase):
         self.assertIn("Private Portfolio", build_footer("en"))
         self.assertIn("Privates Portfolio", build_footer("de"))
         self.assertIn("Yahoo Finance", build_footer("de"))
+
+    def test_login_is_minimal_and_has_empty_placeholders(self):
+        intro = build_login_intro()
+        self.assertIn("Portfolio access", intro)
+        self.assertNotIn("↗", intro)
+        self.assertNotIn("Sign in", intro)
+        self.assertEqual(get_text("username"), "User")
+        self.assertEqual(get_text("enter_username"), "")
+        self.assertEqual(get_text("enter_password"), "")
 
 
 if __name__ == "__main__":

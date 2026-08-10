@@ -349,19 +349,7 @@ hr {
     margin: 1rem auto 1.4rem;
     text-align: center;
 }
-.login-intro__mark {
-    display: inline-grid;
-    place-items: center;
-    width: 46px;
-    height: 46px;
-    margin-bottom: .8rem;
-    border-radius: 14px;
-    color: #dcece4;
-    background: #173c2d;
-    font-size: 1.25rem;
-}
 .login-intro h1 { margin: 0 !important; font-size: 2.15rem !important; }
-.login-intro p { margin: .55rem 0 0 !important; }
 
 @media (prefers-reduced-motion: reduce) {
     .metric-card, [data-testid="stMetric"], .stButton > button { transition: none; }
@@ -421,14 +409,10 @@ def build_login_intro(lang: str = "en") -> str:
     """Build the compact branded login introduction."""
     if lang == "de":
         title = "Portfolio-Zugang"
-        subtitle = "Melden Sie sich an, um Ihre persönliche Übersicht zu öffnen."
     else:
         title = "Portfolio access"
-        subtitle = "Sign in to open your private portfolio overview."
     return f"""
 <div class="login-intro">
-    <div class="login-intro__mark" aria-hidden="true">↗</div>
     <h1>{title}</h1>
-    <p>{subtitle}</p>
 </div>
 """
