@@ -31,7 +31,7 @@ class UIThemeTests(unittest.TestCase):
 
     def test_login_is_minimal_and_has_empty_placeholders(self):
         intro = build_login_intro()
-        self.assertIn("Portfolio access", intro)
+        self.assertIn("Portfolio Login", intro)
         self.assertNotIn("↗", intro)
         self.assertNotIn("Sign in", intro)
         self.assertEqual(get_text("username"), "User")

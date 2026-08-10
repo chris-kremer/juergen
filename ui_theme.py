@@ -399,9 +399,9 @@ def build_footer(lang: str = "en") -> str:
 def build_login_intro(lang: str = "en") -> str:
     """Build the compact branded login introduction."""
     if lang == "de":
-        title = "Portfolio-Zugang"
+        title = "Portfolio Login"
     else:
-        title = "Portfolio access"
+        title = "Portfolio Login"
     return f"""
 <div class="login-intro">
     <h1>{title}</h1>
