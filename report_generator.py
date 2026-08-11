@@ -13,10 +13,10 @@ from typing import Dict, List, Tuple
 import pandas as pd
 import matplotlib.pyplot as plt
 from fpdf import FPDF
-import yfinance as yf
 
 from config import STOCKS
 from translations import format_user_display_name
+from price_fetcher import fetch_stock_history_eur
 
 
 # Conservative monthly inflation assumptions for 2025 (approx. 3% annualized)
@@ -41,8 +41,8 @@ class AnnualReportGenerator:
 
     def __init__(self, price_fetcher):
         self.price_fetcher = price_fetcher
-        self.index_candidates = ["URTH", "UQ2B.F", "DBPG.DE", "EXV1.DE"]
-        self.dax_candidates = ["DAX", "^GDAXI"]
+        self.index_candidates = ["EUNL.DE", "UQ2B.F", "DBPG.DE", "EXV1.DE"]
+        self.dax_candidates = ["LYY7.DE"]
 
     # Public API -----------------------------------------------------
     def generate_user_report(
@@ -69,7 +69,7 @@ class AnnualReportGenerator:
         portfolio_series = pd.Series(0.0, index=date_index)
 
         for stock in STOCKS:
-            symbol = stock["symbol"]
+            symbol = stock.get("symbol")
             default_price = stock.get("current_price", stock["price"])
 
             if symbol == "CASH":
@@ -79,7 +79,7 @@ class AnnualReportGenerator:
                 continue
 
             series = self._get_price_series(
-                symbol,
+                stock,
                 start_date,
                 end_date,
                 default_price,
@@ -94,13 +94,13 @@ class AnnualReportGenerator:
         dax_symbol = self._pick_symbol(self.dax_candidates)
 
         index_series = self._get_price_series(
-            index_symbol,
+            self._stock_for_symbol(index_symbol),
             start_date,
             end_date,
             self._default_price_for_symbol(index_symbol),
         )
         dax_series = self._get_price_series(
-            dax_symbol,
+            self._stock_for_symbol(dax_symbol),
             start_date,
             end_date,
             self._default_price_for_symbol(dax_symbol),
@@ -139,13 +139,16 @@ class AnnualReportGenerator:
         }
 
     def _get_price_series(
-        self, symbol: str, start: datetime, end: datetime, default_price: float
+        self, stock: Dict, start: datetime, end: datetime, default_price: float
     ) -> pd.Series:
-        """Fetch close prices and align to business days with graceful fallback."""
+        """Fetch EUR close prices and align to business days with graceful fallback."""
         full_index = pd.date_range(start=start, end=end, freq="B")
         try:
-            ticker = yf.Ticker(symbol)
-            hist = ticker.history(start=start, end=end + timedelta(days=2))
+            hist = fetch_stock_history_eur(
+                stock,
+                start=start,
+                end=end + timedelta(days=2),
+            )
 
             if hist.empty:
                 return pd.Series(default_price, index=full_index)
@@ -256,17 +259,27 @@ class AnnualReportGenerator:
         }
 
     def _pick_symbol(self, candidates: List[str]) -> str:
-        available_symbols = {stock["symbol"] for stock in STOCKS}
+        available_symbols = {stock.get("symbol") for stock in STOCKS}
         for candidate in candidates:
             if candidate in available_symbols:
                 return candidate
         return candidates[0]
 
     def _default_price_for_symbol(self, symbol: str) -> float:
-        found = next((s for s in STOCKS if s["symbol"] == symbol), None)
+        found = self._stock_for_symbol(symbol)
         if found:
             return found.get("current_price", found.get("price", 100))
         return 100
+
+    def _stock_for_symbol(self, symbol: str) -> Dict:
+        found = next((s for s in STOCKS if s.get("symbol") == symbol), None)
+        if found:
+            return found
+        return {
+            "symbol": symbol,
+            "quote_currency": "EUR",
+            "quote_multiplier": 1.0,
+        }
 
     # PDF rendering --------------------------------------------------
     def _render_pdf(self, user: Dict, context: Dict, year: int) -> bytes:
