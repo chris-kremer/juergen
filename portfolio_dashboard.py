@@ -9,8 +9,18 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 from typing import List, Dict
-from price_fetcher import PriceFetcher, fetch_stock_history_eur
+from price_fetcher import (
+    PriceFetcher,
+    fetch_stock_history_eur,
+    get_return_base_price_eur,
+)
 from config import STOCKS
+from ownership import (
+    get_ownership_percentage,
+    get_unit_balances,
+    get_unit_price,
+    get_user_portfolio_value,
+)
 from translations import format_user_display_name, get_language, get_text, format_currency, format_currency_change
 from celebration import (
     build_annika_2500_celebration_html,
@@ -38,6 +48,10 @@ def _stock_key(stock: Dict) -> str:
 
 def _display_symbol(stock: Dict) -> str:
     return stock.get("symbol") or stock.get("wkn") or stock["name"]
+
+
+def _user_percentage(user: Dict) -> float:
+    return get_ownership_percentage(user["username"])
 
 
 def calculate_historical_portfolio_peak(histories: Dict, stocks: List[Dict]):
@@ -252,7 +266,7 @@ class PortfolioDashboard:
         total_peak = calculate_historical_portfolio_peak(histories, stocks)
         if total_peak is None:
             return None
-        return total_peak * user["portfolio_percentage"]
+        return get_user_portfolio_value(user["username"], total_peak)
     
     def show_dashboard(self, user: Dict, stocks_with_prices: List[Dict], failed_symbols: List[str]):
         """Display the main portfolio dashboard"""
@@ -280,7 +294,7 @@ class PortfolioDashboard:
         
         # Calculate portfolio metrics
         total_portfolio_value = self.price_fetcher.get_portfolio_value(stocks_with_prices)
-        user_portfolio_value = total_portfolio_value * user['portfolio_percentage']
+        user_portfolio_value = get_user_portfolio_value(user['username'], total_portfolio_value)
 
         # Calculate returns from tranches (not from initial_investment field)
         total_invested, total_return_amount, total_return_percentage = self._calculate_tranche_returns(user, total_portfolio_value)
@@ -293,7 +307,7 @@ class PortfolioDashboard:
         
         # Calculate total daily change
         total_daily_change = sum([
-            self.price_fetcher.get_user_daily_change_value(stock, user['portfolio_percentage'])
+            self.price_fetcher.get_user_daily_change_value(stock, _user_percentage(user))
             for stock in stocks_with_prices
         ])
         
@@ -306,7 +320,7 @@ class PortfolioDashboard:
             if stock.get('symbol') == 'CASH':
                 continue
             daily_change_pct = self.price_fetcher.get_daily_change_percentage(stock)
-            daily_change_value = self.price_fetcher.get_user_daily_change_value(stock, user['portfolio_percentage'])
+            daily_change_value = self.price_fetcher.get_user_daily_change_value(stock, _user_percentage(user))
             if stock.get('price_source') == 'live':
                 stock_changes.append({
                     'symbol': _display_symbol(stock),
@@ -452,23 +466,26 @@ class PortfolioDashboard:
         
         # Calculate total portfolio value
         total_portfolio_value = self.price_fetcher.get_portfolio_value(stocks_with_prices)
+        unit_balances = get_unit_balances()
+        current_unit_price = get_unit_price(total_portfolio_value)
         
         # Prepare data for all users
         user_data = []
         for user_info in USERS:
             if user_info['username'] != 'user':  # Skip the overview user itself
-                user_value = total_portfolio_value * user_info['portfolio_percentage']
+                user_value = get_user_portfolio_value(user_info['username'], total_portfolio_value)
                 initial_investment = user_info.get('initial_investment', 0)
                 total_return = user_value - initial_investment
                 return_percentage = (total_return / initial_investment * 100) if initial_investment > 0 else 0
                 
                 user_data.append({
                     'User': format_user_display_name(user_info['username']),
+                    'Units': float(unit_balances[user_info['username']]),
                     'Portfolio Value': user_value,
                     'Initial Investment': initial_investment,
                     'Total Return': total_return,
                     'Return %': return_percentage,
-                    'Share %': user_info['portfolio_percentage'] * 100
+                    'Share %': get_ownership_percentage(user_info['username']) * 100
                 })
         
         # Sort by portfolio value descending
@@ -479,6 +496,7 @@ class PortfolioDashboard:
         
         # Format for display
         formatted_df = df.copy()
+        formatted_df['Units'] = formatted_df['Units'].apply(lambda x: f"{x:,.2f}")
         formatted_df['Portfolio Value'] = formatted_df['Portfolio Value'].apply(lambda x: format_currency(x, lang))
         formatted_df['Initial Investment'] = formatted_df['Initial Investment'].apply(lambda x: format_currency(x, lang))
         formatted_df['Total Return'] = formatted_df['Total Return'].apply(lambda x: format_currency_change(x, lang))
@@ -515,7 +533,11 @@ class PortfolioDashboard:
         
         with col3:
             current_total = sum([u['Portfolio Value'] for u in user_data])
-            st.metric("Current Total", format_currency(current_total, lang))
+            st.metric(
+                "Current Total",
+                format_currency(current_total, lang),
+                f"Unit price {format_currency(float(current_unit_price), lang)}",
+            )
     
     def show_historical_performance_chart(self, user: Dict, lang: str):
         """Show historical portfolio performance vs the MSCI World holding."""
@@ -793,7 +815,7 @@ class PortfolioDashboard:
                     total_portfolio_value += stock['quantity'] * price
             
             # Calculate user's portfolio value
-            user_portfolio_value = total_portfolio_value * user['portfolio_percentage']
+            user_portfolio_value = get_user_portfolio_value(user['username'], total_portfolio_value)
             
             # If no benchmark price was available, use its EUR snapshot price.
             if urth_price is None:
@@ -803,7 +825,10 @@ class PortfolioDashboard:
             
         except Exception as e:
             # Return default values on error
-            default_portfolio = sum(s['quantity'] * s['price'] for s in STOCKS) * user['portfolio_percentage']
+            default_portfolio = get_user_portfolio_value(
+                user['username'],
+                sum(s['quantity'] * s['price'] for s in STOCKS),
+            )
             default_urth = next((s['price'] for s in STOCKS if _is_benchmark(s)), 100)
             return default_portfolio, default_urth
     
@@ -841,7 +866,7 @@ class PortfolioDashboard:
 
                 if not hist.empty and len(hist) > 1:
                     # Normalize to percentage change from start
-                    base_price = float(hist['Close'].iloc[0])
+                    base_price = get_return_base_price_eur(stock, hist)
                     dates = hist.index.tolist()
                     normalized_values = [((float(price) - base_price) / base_price * 100) for price in hist['Close']]
 
@@ -1067,7 +1092,7 @@ class PortfolioDashboard:
             # Prepare data for pie chart
             chart_data = []
             for stock in stocks:
-                value = self.price_fetcher.get_stock_value(stock) * user['portfolio_percentage']
+                value = self.price_fetcher.get_stock_value(stock) * _user_percentage(user)
                 if value > 0:  # Only show non-zero values
                     chart_data.append({
                         'Symbol': _display_symbol(stock),
@@ -1271,7 +1296,7 @@ class PortfolioDashboard:
         table_data = []
         for stock in stocks:
             current_price = stock.get('current_price', stock['price'])
-            your_quantity = stock['quantity'] * user['portfolio_percentage']
+            your_quantity = stock['quantity'] * _user_percentage(user)
             your_value = your_quantity * current_price
             daily_change_pct = self.price_fetcher.get_daily_change_percentage(stock)
             
@@ -1333,7 +1358,7 @@ class PortfolioDashboard:
             st.metric(get_text('total_positions', lang), total_positions)
         
         with col2:
-            cash_value = next((self.price_fetcher.get_stock_value(s) * user['portfolio_percentage'] 
+            cash_value = next((self.price_fetcher.get_stock_value(s) * _user_percentage(user)
                              for s in stocks if s['symbol'] == 'CASH'), 0)
             st.metric(get_text('cash_position', lang), format_currency(cash_value, lang))
         
@@ -1491,7 +1516,7 @@ class PortfolioDashboard:
 
         # Verification section - only show if verification fails
         # Calculate actual current value based on current portfolio percentage
-        actual_current_value = total_portfolio_value * user['portfolio_percentage']
+        actual_current_value = get_user_portfolio_value(user['username'], total_portfolio_value)
         difference = total_current_value - actual_current_value
 
         # Check if difference is within acceptable range (0.1%)
@@ -1689,7 +1714,7 @@ class PortfolioDashboard:
         total_invested = sum(t['amount'] for t in tranches)
 
         # Current value is based on the user's actual portfolio percentage
-        current_value = total_portfolio_value * user['portfolio_percentage']
+        current_value = get_user_portfolio_value(user['username'], total_portfolio_value)
 
         # Calculate returns: current value minus what was invested
         total_return_amount = current_value - total_invested

@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from fpdf import FPDF
 
 from config import STOCKS
+from ownership import get_ownership_percentage
 from translations import format_user_display_name
 from price_fetcher import fetch_stock_history_eur
 
@@ -87,7 +88,7 @@ class AnnualReportGenerator:
             price_series_map[symbol] = series
             portfolio_series += series * stock["quantity"]
 
-        user_series = portfolio_series * user["portfolio_percentage"]
+        user_series = portfolio_series * get_ownership_percentage(user["username"])
 
         # Benchmarks
         index_symbol = self._pick_symbol(self.index_candidates)

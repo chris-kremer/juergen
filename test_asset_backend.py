@@ -3,7 +3,11 @@ import pytest
 
 import price_fetcher
 from config import ASSET_RECONCILIATION, PORTFOLIO_ACCOUNTS, STOCKS, USERS
-from price_fetcher import PriceFetcher, convert_history_to_eur
+from price_fetcher import (
+    PriceFetcher,
+    convert_history_to_eur,
+    get_return_base_price_eur,
+)
 
 
 def _position(isin):
@@ -30,7 +34,7 @@ def test_account_and_portfolio_snapshot_totals_reconcile():
     assert ASSET_RECONCILIATION == {
         "as_of": "2026-08-11",
         "broker_reported_assets_eur": 496430.53,
-        "pending_cash_withdrawal_eur": 4000.0,
+        "confirmed_cash_withdrawal_eur": 4000.0,
         "valuation_adjustments_eur": -94.0,
         "total_assets_eur": 492336.53,
         "attributed_assets_eur": 492336.53,
@@ -70,6 +74,9 @@ def test_fallback_prices_are_eur_per_legal_unit():
         )
 
     assert _position("US84615Q1031")["symbol"] == "SPCX"
+    assert _position("US84615Q1031")["return_reference_price_eur"] == pytest.approx(
+        3275.00 / 28.0
+    )
     assert _position("DE0006062144")["price"] == pytest.approx(59.46)
     assert _position("DE0006062144")["price_mode"] == "fixed"
     assert not any(stock["isin"] == "US3682872078" for stock in STOCKS)
@@ -85,6 +92,24 @@ def test_fixed_corporate_action_is_not_reported_as_failed_live_price():
     assert failed == []
     assert updated[0]["price_source"] == "fixed"
     assert updated[0]["current_price"] == pytest.approx(59.46)
+
+
+def test_spacex_uses_ipo_price_when_history_contains_listing_date():
+    spacex = _position("US84615Q1031")
+    history = pd.DataFrame(
+        {"Close": [120.0, 125.0]},
+        index=pd.DatetimeIndex(["2026-06-12", "2026-06-15"]),
+    )
+    assert get_return_base_price_eur(spacex, history) == pytest.approx(3275 / 28)
+
+
+def test_spacex_uses_period_start_after_ipo_date():
+    spacex = _position("US84615Q1031")
+    history = pd.DataFrame(
+        {"Close": [130.0, 125.0]},
+        index=pd.DatetimeIndex(["2026-07-01", "2026-07-02"]),
+    )
+    assert get_return_base_price_eur(spacex, history) == pytest.approx(130.0)
 
 
 def test_usd_history_is_converted_to_eur(monkeypatch):

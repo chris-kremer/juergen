@@ -5,6 +5,7 @@ Stock price fetching functionality with fallback to default values
 import copy
 import threading
 import time as time_module
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
 import pandas as pd
 import streamlit as st
@@ -97,6 +98,23 @@ def fetch_stock_history_eur(stock: Dict, period: str = None, start=None, end=Non
     return convert_history_to_eur(stock, history, period=period, start=start, end=end)
 
 
+def get_return_base_price_eur(stock: Dict, history: pd.DataFrame) -> float:
+    """Use an explicit event price when that event starts the displayed history."""
+    if history is None or history.empty:
+        return float(stock.get("return_reference_price_eur", stock.get("price", 0.0)))
+    default_base = float(history["Close"].iloc[0])
+    reference_price = stock.get("return_reference_price_eur")
+    reference_date = stock.get("return_reference_date")
+    if reference_price is None or reference_date is None:
+        return default_base
+
+    history_dates = _normalize_daily_index(history.index)
+    reference_timestamp = pd.Timestamp(reference_date).normalize()
+    if history_dates.min() <= reference_timestamp <= history_dates.max():
+        return float(reference_price)
+    return default_base
+
+
 _PREFETCH_LOCK = threading.Lock()
 _PREFETCH_RESULT: Optional[Tuple[List[Dict], List[str]]] = None
 _PREFETCH_COMPLETED_AT = 0.0
@@ -167,9 +185,6 @@ class PriceFetcher:
         Fetch current stock prices using yfinance
         Returns updated stocks list and list of symbols that failed to fetch
         """
-        updated_stocks = []
-        failed_symbols = []
-        
         progress_container = None
         progress_bar = None
         status_text = None
@@ -182,89 +197,84 @@ class PriceFetcher:
             
         non_cash_stocks = [s for s in stocks if s.get("symbol") != "CASH"]
         total_stocks = len(non_cash_stocks)
-        
-        for i, stock in enumerate(stocks):
-            symbol = stock.get("symbol")
-            
-            # Skip cash
-            if symbol == "CASH":
-                updated_stocks.append(stock.copy())
-                continue
+        results = {}
 
-            # Corporate-action claims can have a known fixed settlement value
-            # without a tradeable market ticker. They are valid positions, not
-            # failed price downloads.
-            if stock.get("price_mode") == "fixed":
-                updated_stock = stock.copy()
-                updated_stock["current_price"] = stock["price"]
-                updated_stock["previous_close"] = stock["price"]
-                updated_stock["display_currency"] = "EUR"
-                updated_stock["price_source"] = "fixed"
-                updated_stocks.append(updated_stock)
-                current_progress = len([
-                    item for item in updated_stocks
-                    if item.get("symbol") != "CASH"
-                ])
-                if progress_bar:
-                    progress_bar.progress(current_progress / total_stocks)
-                continue
-                
-            current_index = len([s for s in updated_stocks if s.get("symbol") != "CASH"])
+        def _fallback(stock, source="default"):
+            updated_stock = stock.copy()
+            updated_stock["current_price"] = stock["price"]
+            updated_stock["previous_close"] = stock["price"]
+            updated_stock["display_currency"] = "EUR"
+            updated_stock["price_source"] = source
+            return updated_stock
+
+        def _fetch_market_stock(index, stock):
+            symbol = stock.get("symbol")
             display_symbol = symbol or stock.get("wkn") or stock.get("name", "Unknown")
-            
-            if status_text:
-                status_text.text(f"{get_text('fetching_price_for', language, display_symbol)} ({current_index + 1}/{total_stocks})")
-            
             try:
-                # Fetch enough history for a real previous close. Prices returned
-                # here are already EUR per legal portfolio unit.
                 hist = fetch_stock_history_eur(
                     stock,
                     period="5d",
                     use_cache=use_cached_history,
                 )
-                
-                if not hist.empty:
-                    # Get current and previous closing prices
-                    current_price = float(hist['Close'].iloc[-1])
-                    
-                    # Get previous day's close if available
-                    previous_close = None
-                    if len(hist) > 1:
-                        previous_close = float(hist['Close'].iloc[-2])
-                    elif 'Open' in hist.columns:
-                        previous_close = float(hist['Open'].iloc[-1])
-                    
-                    # Update stock with current price
-                    updated_stock = stock.copy()
-                    updated_stock['current_price'] = current_price
-                    updated_stock['previous_close'] = previous_close
-                    updated_stock['display_currency'] = 'EUR'
-                    updated_stock['price_source'] = 'live'
-                    updated_stocks.append(updated_stock)
-                else:
-                    # No data available, use default price
-                    updated_stock = stock.copy()
-                    updated_stock['current_price'] = stock['price']
-                    updated_stock['previous_close'] = stock['price']  # No change data
-                    updated_stock['price_source'] = 'default'
-                    updated_stocks.append(updated_stock)
-                    failed_symbols.append(display_symbol)
-                    
-            except Exception as e:
-                # Error fetching data, use default price
+                if hist.empty:
+                    return index, _fallback(stock), display_symbol
+
+                current_price = float(hist["Close"].iloc[-1])
+                previous_close = None
+                if len(hist) > 1:
+                    previous_close = float(hist["Close"].iloc[-2])
+                elif "Open" in hist.columns:
+                    previous_close = float(hist["Open"].iloc[-1])
+
                 updated_stock = stock.copy()
-                updated_stock['current_price'] = stock['price']
-                updated_stock['previous_close'] = stock['price']  # No change data
-                updated_stock['price_source'] = 'default'
-                updated_stocks.append(updated_stock)
-                failed_symbols.append(display_symbol)
-                
-            # Update progress bar
-            current_progress = len([s for s in updated_stocks if s.get("symbol") != "CASH"])
-            progress_percentage = current_progress / total_stocks
-            if progress_bar:
-                progress_bar.progress(progress_percentage)
+                updated_stock["current_price"] = current_price
+                updated_stock["previous_close"] = previous_close
+                updated_stock["display_currency"] = "EUR"
+                updated_stock["price_source"] = "live"
+                return index, updated_stock, None
+            except Exception:
+                return index, _fallback(stock), display_symbol
+
+        market_jobs = []
+        completed_non_cash = 0
+        for index, stock in enumerate(stocks):
+            symbol = stock.get("symbol")
+            if symbol == "CASH":
+                results[index] = (stock.copy(), None)
+            elif stock.get("price_mode") == "fixed":
+                results[index] = (_fallback(stock, source="fixed"), None)
+                completed_non_cash += 1
+            else:
+                market_jobs.append((index, stock))
+
+        if progress_bar and total_stocks:
+            progress_bar.progress(completed_non_cash / total_stocks)
+
+        max_workers = min(6, len(market_jobs))
+        if market_jobs:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(_fetch_market_stock, index, stock): stock
+                    for index, stock in market_jobs
+                }
+                for future in as_completed(futures):
+                    index, updated_stock, failed_symbol = future.result()
+                    results[index] = (updated_stock, failed_symbol)
+                    completed_non_cash += 1
+                    if status_text:
+                        status_text.text(
+                            f"{get_text('fetching_prices', language)} "
+                            f"({completed_non_cash}/{total_stocks})"
+                        )
+                    if progress_bar:
+                        progress_bar.progress(completed_non_cash / total_stocks)
+
+        updated_stocks = [results[index][0] for index in range(len(stocks))]
+        failed_symbols = [
+            results[index][1]
+            for index in range(len(stocks))
+            if results[index][1] is not None
+        ]
             
         # Remove all loading UI as soon as the final quote is available.
         if progress_bar:
@@ -356,8 +366,9 @@ class PriceFetcher:
                         else:
                             previous_price = float(hist['Open'].iloc[-1])
                     else:
-                        # For longer periods, use first day's close
-                        previous_price = float(hist['Close'].iloc[0])
+                        # Use a documented event price (such as an IPO price)
+                        # when that event begins the displayed period.
+                        previous_price = get_return_base_price_eur(stock, hist)
                     
                     change_percentage = ((current_price - previous_price) / previous_price * 100) if previous_price > 0 else 0
                     

@@ -2,6 +2,8 @@
 Portfolio configuration data
 """
 
+from ownership import get_ownership_percentage
+
 USERS = [
     {
         "username": "user",
@@ -11,7 +13,7 @@ USERS = [
     },
     {
         "username": "foehr",
-        "portfolio_percentage": 0.092131802143,
+        "portfolio_percentage": get_ownership_percentage("foehr"),
         "initial_investment": 20000,
         "payments": [
             {"amount": 20000, "date": "2025-07-01"},
@@ -30,13 +32,13 @@ USERS = [
     },
     {
         "username": "kremer",
-        "portfolio_percentage": 0.526139718428,
+        "portfolio_percentage": get_ownership_percentage("kremer"),
         "initial_investment": 130000,
         "paid_date": "2022-01-01"
     },
     {
         "username": "annika",
-        "portfolio_percentage": 0.004611560772,
+        "portfolio_percentage": get_ownership_percentage("annika"),
         "initial_investment": 200,
         "payments": [
             {"amount": 100, "date": "2024-09-01"},
@@ -69,16 +71,17 @@ USERS = [
     },
     {
         "username": "juergen",
-        "portfolio_percentage": 0.238738672975,
+        "portfolio_percentage": get_ownership_percentage("juergen"),
         "initial_investment": 50000,
         "payments": [
-            {"amount": 50000, "date": "2025-06-01"},
-            {"amount": 50000, "date": "2026-01-24"}
+            {"amount": 50000, "date": "2025-07-03", "type": "Confirmed cash pay-in"},
+            {"amount": 35000, "date": "2026-01-05", "type": "Confirmed cash pay-in"},
+            {"amount": 15000, "date": "2026-01-06", "type": "Confirmed cash pay-in"}
         ]
     },
     {
         "username": "christian",
-        "portfolio_percentage": 0.138378245682,
+        "portfolio_percentage": get_ownership_percentage("christian"),
         "initial_investment": 30000,
         "payments": [
             {"amount": 30000, "date": "2022-01-01", "type": "Initial investment"},
@@ -95,7 +98,7 @@ USERS = [
 ]
 
 ASSET_SNAPSHOT_DATE = "2026-08-11"
-PENDING_CASH_WITHDRAWAL_EUR = 4000.00
+CONFIRMED_CASH_WITHDRAWAL_EUR = 4000.00
 
 # Legal positions exactly as reported by the two custody accounts. Quantities are
 # never adjusted for exchange rates, ADR ratios, or quote units. `value_eur` is the
@@ -115,7 +118,7 @@ PORTFOLIO_ACCOUNTS = [
             {"isin": "DE000A0F5UJ7", "wkn": "A0F5UJ", "symbol": "EXV1.DE", "quantity": 284.0, "value_eur": 12126.80, "cost_basis_eur": 3998.72, "name": "iShares STOXX Europe 600 Banks", "industry": "European Banks", "quote_currency": "EUR"},
             {"isin": "DE0006062144", "wkn": "606214", "symbol": None, "quantity": 100.0, "value_eur": 5946.00, "broker_value_eur": 6040.00, "cost_basis_eur": 3840.50, "name": "Covestro (pending squeeze-out)", "industry": "Chemicals", "quote_currency": "EUR", "price_mode": "fixed", "fixed_price_reason": "Pending cash compensation at EUR 59.46 per share"},
             {"isin": "GB0007980591", "wkn": "850517", "symbol": "BP.L", "quantity": 1000.0, "value_eur": 6225.00, "cost_basis_eur": 3779.00, "name": "BP", "industry": "Oil & Gas", "quote_currency": "GBP", "quote_multiplier": 0.01},
-            {"isin": "US84615Q1031", "wkn": "A42D4F", "symbol": "SPCX", "quantity": 28.0, "value_eur": 3321.21, "cost_basis_eur": 3275.00, "name": "SpaceX Class A", "industry": "Aerospace", "quote_currency": "USD"},
+            {"isin": "US84615Q1031", "wkn": "A42D4F", "symbol": "SPCX", "quantity": 28.0, "value_eur": 3321.21, "cost_basis_eur": 3275.00, "name": "SpaceX Class A", "industry": "Aerospace", "quote_currency": "USD", "return_reference_date": "2026-06-12", "return_reference_price_eur": 116.9642857143, "return_reference_label": "IPO price ($135.00)"},
             {"isin": "GB00BP6MXD84", "wkn": "A3C99G", "symbol": "SHEL.L", "quantity": 150.0, "value_eur": 5883.00, "cost_basis_eur": 2768.58, "name": "Shell", "industry": "Oil & Gas", "quote_currency": "GBP", "quote_multiplier": 0.01},
             {"isin": "LU0252633754", "wkn": "LYX0AC", "symbol": "LYY7.DE", "quantity": 15.543, "value_eur": 3738.09, "cost_basis_eur": 2581.49, "name": "Amundi DAX III", "industry": "DAX", "quote_currency": "EUR"},
             {"isin": "US69608A1088", "wkn": "A2QA4J", "symbol": "PLTR", "quantity": 100.0, "value_eur": 15290.00, "cost_basis_eur": 895.33, "name": "Palantir", "industry": "Software", "quote_currency": "USD"},
@@ -178,7 +181,7 @@ def _aggregate_stocks(accounts):
         stocks.append(position)
 
     broker_cash = sum(account["cash_balance_eur"] for account in accounts)
-    total_cash = broker_cash - PENDING_CASH_WITHDRAWAL_EUR
+    total_cash = broker_cash - CONFIRMED_CASH_WITHDRAWAL_EUR
     stocks.append({
         "isin": "CASH-EUR",
         "wkn": None,
@@ -195,7 +198,7 @@ def _aggregate_stocks(accounts):
             for account in accounts
         },
         "broker_reported_value_eur": broker_cash,
-        "pending_withdrawal_eur": PENDING_CASH_WITHDRAWAL_EUR,
+        "confirmed_withdrawal_eur": CONFIRMED_CASH_WITHDRAWAL_EUR,
     })
     return stocks
 
@@ -220,10 +223,10 @@ def get_asset_reconciliation():
     return {
         "as_of": ASSET_SNAPSHOT_DATE,
         "broker_reported_assets_eur": broker_reported_assets,
-        "pending_cash_withdrawal_eur": PENDING_CASH_WITHDRAWAL_EUR,
+        "confirmed_cash_withdrawal_eur": CONFIRMED_CASH_WITHDRAWAL_EUR,
         "valuation_adjustments_eur": round(
             total_assets
-            - (broker_reported_assets - PENDING_CASH_WITHDRAWAL_EUR),
+            - (broker_reported_assets - CONFIRMED_CASH_WITHDRAWAL_EUR),
             2,
         ),
         "total_assets_eur": total_assets,

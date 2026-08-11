@@ -13,6 +13,7 @@ from price_fetcher import (
 )
 from portfolio_dashboard import PortfolioDashboard
 from config import STOCKS
+from ownership import get_user_portfolio_value
 from translations import get_language, get_text
 from message_system import message_system
 from ui_theme import build_app_css, build_footer
@@ -235,7 +236,10 @@ def main():
         
         # Calculate current portfolio value for messages
         total_portfolio_value = price_fetcher.get_portfolio_value(stocks_with_prices)
-        user_portfolio_value = total_portfolio_value * user['portfolio_percentage']
+        user_portfolio_value = get_user_portfolio_value(
+            user['username'],
+            total_portfolio_value,
+        )
         
         # Show user messages (weekend, value changes, one-time messages)
         message_system.show_messages(user['username'], user_portfolio_value)
