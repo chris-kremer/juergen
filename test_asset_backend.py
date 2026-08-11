@@ -3,7 +3,7 @@ import pytest
 
 import price_fetcher
 from config import ASSET_RECONCILIATION, PORTFOLIO_ACCOUNTS, STOCKS, USERS
-from price_fetcher import convert_history_to_eur
+from price_fetcher import PriceFetcher, convert_history_to_eur
 
 
 def _position(isin):
@@ -14,7 +14,10 @@ def test_account_and_portfolio_snapshot_totals_reconcile():
     account_totals = {
         account["account_id"]: round(
             account["cash_balance_eur"]
-            + sum(holding["value_eur"] for holding in account["holdings"]),
+            + sum(
+                holding.get("broker_value_eur", holding["value_eur"])
+                for holding in account["holdings"]
+            ),
             2,
         )
         for account in PORTFOLIO_ACCOUNTS
@@ -28,8 +31,9 @@ def test_account_and_portfolio_snapshot_totals_reconcile():
         "as_of": "2026-08-11",
         "broker_reported_assets_eur": 496430.53,
         "pending_cash_withdrawal_eur": 4000.0,
-        "total_assets_eur": 492430.53,
-        "attributed_assets_eur": 492430.53,
+        "valuation_adjustments_eur": -94.0,
+        "total_assets_eur": 492336.53,
+        "attributed_assets_eur": 492336.53,
         "other_overhang_eur": 0.0,
     }
 
@@ -65,9 +69,22 @@ def test_fallback_prices_are_eur_per_legal_unit():
             stock["value_eur"], abs=0.005
         )
 
-    # SpaceX is a private holding. It must never be priced from the unrelated
-    # exchange-traded SPCX ticker.
-    assert _position("US84615Q1031")["symbol"] is None
+    assert _position("US84615Q1031")["symbol"] == "SPCX"
+    assert _position("DE0006062144")["price"] == pytest.approx(59.46)
+    assert _position("DE0006062144")["price_mode"] == "fixed"
+    assert not any(stock["isin"] == "US3682872078" for stock in STOCKS)
+
+
+def test_fixed_corporate_action_is_not_reported_as_failed_live_price():
+    covestro = _position("DE0006062144")
+    updated, failed = PriceFetcher().fetch_stock_prices(
+        [covestro],
+        show_progress=False,
+    )
+
+    assert failed == []
+    assert updated[0]["price_source"] == "fixed"
+    assert updated[0]["current_price"] == pytest.approx(59.46)
 
 
 def test_usd_history_is_converted_to_eur(monkeypatch):

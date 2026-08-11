@@ -190,6 +190,24 @@ class PriceFetcher:
             if symbol == "CASH":
                 updated_stocks.append(stock.copy())
                 continue
+
+            # Corporate-action claims can have a known fixed settlement value
+            # without a tradeable market ticker. They are valid positions, not
+            # failed price downloads.
+            if stock.get("price_mode") == "fixed":
+                updated_stock = stock.copy()
+                updated_stock["current_price"] = stock["price"]
+                updated_stock["previous_close"] = stock["price"]
+                updated_stock["display_currency"] = "EUR"
+                updated_stock["price_source"] = "fixed"
+                updated_stocks.append(updated_stock)
+                current_progress = len([
+                    item for item in updated_stocks
+                    if item.get("symbol") != "CASH"
+                ])
+                if progress_bar:
+                    progress_bar.progress(current_progress / total_stocks)
+                continue
                 
             current_index = len([s for s in updated_stocks if s.get("symbol") != "CASH"])
             display_symbol = symbol or stock.get("wkn") or stock.get("name", "Unknown")
