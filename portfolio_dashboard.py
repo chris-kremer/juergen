@@ -129,6 +129,18 @@ def get_confirmed_portfolio_capital_events(users: List[Dict]) -> List[Dict]:
     return sorted(events, key=lambda event: event["date"])
 
 
+def get_confirmed_user_investment(username: str, users: List[Dict]) -> float:
+    """Return confirmed net invested capital for one owner or the whole pool."""
+    events = get_confirmed_portfolio_capital_events(users)
+    if username == "user":
+        return sum(event["amount_eur"] for event in events)
+    return sum(
+        event["amount_eur"]
+        for event in events
+        if event["owner"] == username
+    )
+
+
 def build_confirmed_capital_series(users: List[Dict], as_of) -> pd.DataFrame:
     """Return month-level cumulative net capital attributed to all owners."""
     events = get_confirmed_portfolio_capital_events(users)
@@ -161,8 +173,10 @@ def calculate_tax_simulation(
     stocks: List[Dict],
     user_percentage: float = 1.0,
     tax_rate: float = 0.25,
+    invested_capital_eur: float = 0.0,
+    allocated_tax_eur=None,
 ) -> Dict:
-    """Estimate liquidation tax on the portfolio's net unrealized gain."""
+    """Estimate liquidation tax and a gain-only 25% equivalent value."""
     if not 0 <= tax_rate < 1:
         raise ValueError("Tax rate must be between zero and one")
 
@@ -175,18 +189,61 @@ def calculate_tax_simulation(
 
     gross_value *= user_percentage
     cost_basis *= user_percentage
-    unrealized_gain = max(gross_value - cost_basis, 0.0)
-    estimated_tax = unrealized_gain * tax_rate
+    taxable_gain = max(gross_value - cost_basis, 0.0)
+    economic_gain = max(gross_value - invested_capital_eur, 0.0)
+    pooled_tax_share = taxable_gain * tax_rate
+    estimated_tax = (
+        pooled_tax_share
+        if allocated_tax_eur is None
+        else max(float(allocated_tax_eur), 0.0)
+    )
     net_liquidation_value = gross_value - estimated_tax
-    gross_up_reference = gross_value / (1.0 - tax_rate)
+
+    # Find the hypothetical gross value whose gain above the user's investment,
+    # taxed at 25%, leaves exactly the simulated net liquidation value.
+    equivalent_tax_rate = 0.25
+    if net_liquidation_value > invested_capital_eur:
+        tax_equivalent_value = invested_capital_eur + (
+            (net_liquidation_value - invested_capital_eur)
+            / (1.0 - equivalent_tax_rate)
+        )
+    else:
+        tax_equivalent_value = net_liquidation_value
+
+    standard_tax_on_economic_gain = economic_gain * equivalent_tax_rate
+    effective_tax_burden = (
+        estimated_tax / economic_gain
+        if economic_gain > 0
+        else 0.0
+    )
     return {
         "gross_value_eur": gross_value,
         "cost_basis_eur": cost_basis,
-        "unrealized_gain_eur": unrealized_gain,
+        "invested_capital_eur": invested_capital_eur,
+        "taxable_gain_eur": taxable_gain,
+        "economic_gain_eur": economic_gain,
+        "pooled_tax_share_eur": pooled_tax_share,
         "estimated_tax_eur": estimated_tax,
         "net_liquidation_value_eur": net_liquidation_value,
-        "gross_up_reference_eur": gross_up_reference,
+        "standard_tax_on_economic_gain_eur": standard_tax_on_economic_gain,
+        "tax_equivalent_value_eur": tax_equivalent_value,
+        "effective_tax_burden": effective_tax_burden,
         "tax_rate": tax_rate,
+    }
+
+
+def allocate_tax_by_earnings(total_tax_eur: float, earnings_by_owner: Dict) -> Dict:
+    """Allocate one pooled tax liability in proportion to positive owner earnings."""
+    positive_earnings = {
+        owner: max(float(earnings), 0.0)
+        for owner, earnings in earnings_by_owner.items()
+    }
+    total_earnings = sum(positive_earnings.values())
+    if total_earnings <= 0:
+        return {owner: 0.0 for owner in positive_earnings}
+    return {
+        owner: float(total_tax_eur) * earnings / total_earnings
+        for owner, earnings in positive_earnings.items()
     }
 
 
@@ -808,10 +865,48 @@ class PortfolioDashboard:
             key=f"tax_model_{user['username']}",
         )
         tax_rate = 0.25 if tax_model == "capital_gains" else 0.26375
+
+        total_simulation = calculate_tax_simulation(
+            stocks_with_prices,
+            user_percentage=1.0,
+            tax_rate=tax_rate,
+            invested_capital_eur=get_confirmed_user_investment("user", USERS),
+        )
+        owner_inputs = {}
+        for owner in USERS:
+            if owner["username"] == "user":
+                continue
+            owner_investment = get_confirmed_user_investment(owner["username"], USERS)
+            owner_preview = calculate_tax_simulation(
+                stocks_with_prices,
+                user_percentage=get_ownership_percentage(owner["username"]),
+                tax_rate=tax_rate,
+                invested_capital_eur=owner_investment,
+            )
+            owner_inputs[owner["username"]] = {
+                "investment": owner_investment,
+                "earnings": owner_preview["economic_gain_eur"],
+            }
+        owner_tax_allocations = allocate_tax_by_earnings(
+            total_simulation["estimated_tax_eur"],
+            {
+                username: inputs["earnings"]
+                for username, inputs in owner_inputs.items()
+            },
+        )
+
+        invested_capital = get_confirmed_user_investment(user["username"], USERS)
+        allocated_tax = (
+            total_simulation["estimated_tax_eur"]
+            if user["username"] == "user"
+            else owner_tax_allocations[user["username"]]
+        )
         simulation = calculate_tax_simulation(
             stocks_with_prices,
             user_percentage=_user_percentage(user),
             tax_rate=tax_rate,
+            invested_capital_eur=invested_capital,
+            allocated_tax_eur=allocated_tax,
         )
 
         self._show_metric_grid([
@@ -820,20 +915,29 @@ class PortfolioDashboard:
                 "value": format_currency(simulation["gross_value_eur"], lang),
             },
             {
-                "label": get_text("unrealized_gain", lang),
-                "value": format_currency_change(simulation["unrealized_gain_eur"], lang),
+                "label": get_text("confirmed_investment", lang),
+                "value": format_currency(simulation["invested_capital_eur"], lang),
+            },
+            {
+                "label": get_text("gain_over_investment", lang),
+                "value": format_currency_change(simulation["economic_gain_eur"], lang),
             },
             {
                 "label": get_text("estimated_tax", lang),
                 "value": format_currency_change(-simulation["estimated_tax_eur"], lang),
+                "delta": get_text(
+                    "tax_share_of_gain",
+                    lang,
+                    simulation["effective_tax_burden"] * 100,
+                ) if simulation["economic_gain_eur"] else None,
             },
             {
                 "label": get_text("net_liquidation_value", lang),
                 "value": format_currency(simulation["net_liquidation_value_eur"], lang),
             },
             {
-                "label": get_text("gross_up_reference", lang, tax_rate * 100),
-                "value": format_currency(simulation["gross_up_reference_eur"], lang),
+                "label": get_text("tax_equivalent_value", lang),
+                "value": format_currency(simulation["tax_equivalent_value_eur"], lang),
             },
         ])
 
@@ -841,18 +945,18 @@ class PortfolioDashboard:
             x=[
                 get_text("gross_asset_value", lang),
                 get_text("net_liquidation_value", lang),
-                get_text("gross_up_short", lang),
+                get_text("tax_equivalent_short", lang),
             ],
             y=[
                 simulation["gross_value_eur"],
                 simulation["net_liquidation_value_eur"],
-                simulation["gross_up_reference_eur"],
+                simulation["tax_equivalent_value_eur"],
             ],
             marker_color=["#54706a", "#176b4d", "#a6782d"],
             text=[
                 format_currency(simulation["gross_value_eur"], lang),
                 format_currency(simulation["net_liquidation_value_eur"], lang),
-                format_currency(simulation["gross_up_reference_eur"], lang),
+                format_currency(simulation["tax_equivalent_value_eur"], lang),
             ],
             textposition="outside",
             hovertemplate="%{x}<br>EUR %{y:,.2f}<extra></extra>",
@@ -877,14 +981,20 @@ class PortfolioDashboard:
                     stocks_with_prices,
                     user_percentage=get_ownership_percentage(owner["username"]),
                     tax_rate=tax_rate,
+                    invested_capital_eur=get_confirmed_user_investment(
+                        owner["username"],
+                        USERS,
+                    ),
+                    allocated_tax_eur=owner_tax_allocations[owner["username"]],
                 )
                 owner_rows.append({
                     get_text("username", lang): format_user_display_name(owner["username"]),
                     get_text("gross_asset_value", lang): owner_simulation["gross_value_eur"],
-                    get_text("unrealized_gain", lang): owner_simulation["unrealized_gain_eur"],
+                    get_text("confirmed_investment", lang): owner_simulation["invested_capital_eur"],
+                    get_text("gain_over_investment", lang): owner_simulation["economic_gain_eur"],
                     get_text("estimated_tax", lang): owner_simulation["estimated_tax_eur"],
                     get_text("net_liquidation_value", lang): owner_simulation["net_liquidation_value_eur"],
-                    get_text("gross_up_short", lang): owner_simulation["gross_up_reference_eur"],
+                    get_text("tax_equivalent_short", lang): owner_simulation["tax_equivalent_value_eur"],
                 })
 
             owner_tax_frame = pd.DataFrame(owner_rows)
@@ -1012,16 +1122,16 @@ class PortfolioDashboard:
                     len=0.72,
                 ),
             ),
-            customdata=names,
-            texttemplate="<b>%{label}</b><br>%{percentRoot:.1%}<br>%{color:+.2f}%",
+            customdata=list(zip(names, colors)),
+            texttemplate="<b>%{label}</b><br>%{percentRoot:.1%}<br>%{customdata[1]:+.2f}%",
             hovertemplate=(
-                "<b>%{customdata}</b><br>"
+                "<b>%{customdata[0]}</b><br>"
                 + get_text("your_value", lang)
                 + ": EUR %{value:,.2f}<br>"
                 + get_text("portfolio_share", lang)
                 + ": %{percentRoot:.2%}<br>"
                 + return_label
-                + ": %{color:+.2f}%<extra></extra>"
+                + ": %{customdata[1]:+.2f}%<extra></extra>"
             ),
             textfont=dict(color="#ffffff", size=15),
             tiling=dict(packing="squarify", pad=2),

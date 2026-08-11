@@ -5,10 +5,12 @@ import plotly.graph_objects as go
 
 from portfolio_dashboard import (
     PortfolioDashboard,
+    allocate_tax_by_earnings,
     build_confirmed_capital_series,
     build_portfolio_heatmap_rows,
     calculate_tax_simulation,
     get_confirmed_portfolio_capital_events,
+    get_confirmed_user_investment,
 )
 
 
@@ -29,14 +31,40 @@ class ChartInteractionTests(unittest.TestCase):
             },
         ]
 
-        simulation = calculate_tax_simulation(stocks, tax_rate=0.25)
+        simulation = calculate_tax_simulation(
+            stocks,
+            tax_rate=0.25,
+            invested_capital_eur=150,
+        )
 
         self.assertEqual(simulation["gross_value_eur"], 250)
         self.assertEqual(simulation["cost_basis_eur"], 150)
-        self.assertEqual(simulation["unrealized_gain_eur"], 100)
+        self.assertEqual(simulation["taxable_gain_eur"], 100)
+        self.assertEqual(simulation["economic_gain_eur"], 100)
         self.assertEqual(simulation["estimated_tax_eur"], 25)
         self.assertEqual(simulation["net_liquidation_value_eur"], 225)
-        self.assertAlmostEqual(simulation["gross_up_reference_eur"], 250 / 0.75)
+        self.assertEqual(simulation["tax_equivalent_value_eur"], 250)
+
+    def test_tax_equivalent_grosses_up_only_gain_above_investment(self):
+        stocks = [{
+            "quantity": 10,
+            "price": 20,
+            "cost_basis_eur": 160,
+        }]
+
+        simulation = calculate_tax_simulation(
+            stocks,
+            tax_rate=0.25,
+            invested_capital_eur=100,
+        )
+
+        self.assertEqual(simulation["gross_value_eur"], 200)
+        self.assertEqual(simulation["economic_gain_eur"], 100)
+        self.assertEqual(simulation["estimated_tax_eur"], 10)
+        self.assertEqual(simulation["net_liquidation_value_eur"], 190)
+        self.assertEqual(simulation["tax_equivalent_value_eur"], 220)
+        equivalent_net = 220 - 0.25 * (220 - 100)
+        self.assertEqual(equivalent_net, 190)
 
     def test_tax_simulation_allocates_the_pool_pro_rata(self):
         stocks = [{
@@ -49,12 +77,37 @@ class ChartInteractionTests(unittest.TestCase):
             stocks,
             user_percentage=0.2,
             tax_rate=0.25,
+            invested_capital_eur=30,
         )
 
         self.assertEqual(simulation["gross_value_eur"], 40)
         self.assertEqual(simulation["cost_basis_eur"], 20)
+        self.assertEqual(simulation["pooled_tax_share_eur"], 5)
         self.assertEqual(simulation["estimated_tax_eur"], 5)
         self.assertEqual(simulation["net_liquidation_value_eur"], 35)
+        self.assertAlmostEqual(simulation["tax_equivalent_value_eur"], 30 + 5 / 0.75)
+
+    def test_tax_liability_is_allocated_proportionally_to_earnings(self):
+        allocations = allocate_tax_by_earnings(
+            30,
+            {"one": 20, "two": 80, "loss": -10},
+        )
+
+        self.assertEqual(allocations["one"], 6)
+        self.assertEqual(allocations["two"], 24)
+        self.assertEqual(allocations["loss"], 0)
+        self.assertEqual(sum(allocations.values()), 30)
+
+    def test_confirmed_user_investment_supports_owner_and_admin_totals(self):
+        users = [
+            {"username": "user"},
+            {"username": "one", "payments": [{"date": "2026-01-01", "amount": 80}]},
+            {"username": "two", "initial_investment": 20, "paid_date": "2025-01-01"},
+        ]
+
+        self.assertEqual(get_confirmed_user_investment("one", users), 80)
+        self.assertEqual(get_confirmed_user_investment("two", users), 20)
+        self.assertEqual(get_confirmed_user_investment("user", users), 100)
 
     def test_admin_capital_ledger_uses_payments_or_initial_but_not_both(self):
         users = [
