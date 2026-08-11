@@ -113,12 +113,11 @@ PORTFOLIO_ACCOUNTS = [
             {"isin": "LU0411078552", "wkn": "DBX0B5", "symbol": "DBPG.DE", "quantity": 45.0, "value_eur": 14418.00, "cost_basis_eur": 6510.60, "name": "Xtrackers S&P 500 2x Leveraged", "industry": "Index", "quote_currency": "EUR"},
             {"isin": "IE00BLS09N40", "wkn": "A14JCP", "symbol": "3BAL.L", "quantity": 578.0, "value_eur": 58083.22, "cost_basis_eur": 4171.63, "name": "WisdomTree EURO STOXX Banks 3x", "industry": "European Banks", "quote_currency": "GBP", "quote_multiplier": 0.01},
             {"isin": "DE000A0F5UJ7", "wkn": "A0F5UJ", "symbol": "EXV1.DE", "quantity": 284.0, "value_eur": 12126.80, "cost_basis_eur": 3998.72, "name": "iShares STOXX Europe 600 Banks", "industry": "European Banks", "quote_currency": "EUR"},
-            {"isin": "DE0006062144", "wkn": "606214", "symbol": "1COV.DE", "quantity": 100.0, "value_eur": 6040.00, "cost_basis_eur": 3840.50, "name": "Covestro", "industry": "Chemicals", "quote_currency": "EUR"},
+            {"isin": "DE0006062144", "wkn": "606214", "symbol": None, "quantity": 100.0, "value_eur": 5946.00, "broker_value_eur": 6040.00, "cost_basis_eur": 3840.50, "name": "Covestro (pending squeeze-out)", "industry": "Chemicals", "quote_currency": "EUR", "price_mode": "fixed", "fixed_price_reason": "Pending cash compensation at EUR 59.46 per share"},
             {"isin": "GB0007980591", "wkn": "850517", "symbol": "BP.L", "quantity": 1000.0, "value_eur": 6225.00, "cost_basis_eur": 3779.00, "name": "BP", "industry": "Oil & Gas", "quote_currency": "GBP", "quote_multiplier": 0.01},
-            {"isin": "US84615Q1031", "wkn": "A42D4F", "symbol": None, "quantity": 28.0, "value_eur": 3321.21, "cost_basis_eur": 3275.00, "name": "SpaceX Class A", "industry": "Aerospace", "quote_currency": "USD"},
+            {"isin": "US84615Q1031", "wkn": "A42D4F", "symbol": "SPCX", "quantity": 28.0, "value_eur": 3321.21, "cost_basis_eur": 3275.00, "name": "SpaceX Class A", "industry": "Aerospace", "quote_currency": "USD"},
             {"isin": "GB00BP6MXD84", "wkn": "A3C99G", "symbol": "SHEL.L", "quantity": 150.0, "value_eur": 5883.00, "cost_basis_eur": 2768.58, "name": "Shell", "industry": "Oil & Gas", "quote_currency": "GBP", "quote_multiplier": 0.01},
             {"isin": "LU0252633754", "wkn": "LYX0AC", "symbol": "LYY7.DE", "quantity": 15.543, "value_eur": 3738.09, "cost_basis_eur": 2581.49, "name": "Amundi DAX III", "industry": "DAX", "quote_currency": "EUR"},
-            {"isin": "US3682872078", "wkn": "903276", "symbol": None, "quantity": 400.0, "value_eur": 0.00, "cost_basis_eur": 1776.80, "name": "Gazprom ADR", "industry": "Oil & Gas", "quote_currency": "EUR"},
             {"isin": "US69608A1088", "wkn": "A2QA4J", "symbol": "PLTR", "quantity": 100.0, "value_eur": 15290.00, "cost_basis_eur": 895.33, "name": "Palantir", "industry": "Software", "quote_currency": "USD"},
             {"isin": "LU0256839274", "wkn": "A0KDMU", "symbol": "UQ2B.F", "quantity": 2.897, "value_eur": 1079.35, "cost_basis_eur": 845.22, "name": "AGIF Europe Equity Growth", "industry": "European Equity", "quote_currency": "EUR"},
             {"isin": "DE0005140008", "wkn": "514000", "symbol": "DBK.DE", "quantity": 1.0, "value_eur": 33.20, "cost_basis_eur": 10.76, "name": "Deutsche Bank", "industry": "Bank", "quote_currency": "EUR"},
@@ -209,7 +208,10 @@ def get_asset_reconciliation():
     broker_reported_assets = round(
         sum(
             account["cash_balance_eur"]
-            + sum(holding["value_eur"] for holding in account["holdings"])
+            + sum(
+                holding.get("broker_value_eur", holding["value_eur"])
+                for holding in account["holdings"]
+            )
             for account in PORTFOLIO_ACCOUNTS
         ),
         2,
@@ -219,6 +221,11 @@ def get_asset_reconciliation():
         "as_of": ASSET_SNAPSHOT_DATE,
         "broker_reported_assets_eur": broker_reported_assets,
         "pending_cash_withdrawal_eur": PENDING_CASH_WITHDRAWAL_EUR,
+        "valuation_adjustments_eur": round(
+            total_assets
+            - (broker_reported_assets - PENDING_CASH_WITHDRAWAL_EUR),
+            2,
+        ),
         "total_assets_eur": total_assets,
         "attributed_assets_eur": total_assets,
         "other_overhang_eur": 0.0,
