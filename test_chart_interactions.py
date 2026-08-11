@@ -8,6 +8,7 @@ from portfolio_dashboard import (
     allocate_tax_by_earnings,
     build_confirmed_capital_series,
     build_portfolio_heatmap_rows,
+    cap_pooled_tax_to_economic_gains,
     calculate_tax_simulation,
     get_confirmed_portfolio_capital_events,
     get_confirmed_user_investment,
@@ -97,6 +98,10 @@ class ChartInteractionTests(unittest.TestCase):
         self.assertEqual(allocations["two"], 24)
         self.assertEqual(allocations["loss"], 0)
         self.assertEqual(sum(allocations.values()), 30)
+
+    def test_pooled_tax_is_capped_at_rate_on_total_economic_gains(self):
+        self.assertEqual(cap_pooled_tax_to_economic_gains(60, 200, 0.25), 50)
+        self.assertEqual(cap_pooled_tax_to_economic_gains(40, 200, 0.25), 40)
 
     def test_confirmed_user_investment_supports_owner_and_admin_totals(self):
         users = [

@@ -247,6 +247,18 @@ def allocate_tax_by_earnings(total_tax_eur: float, earnings_by_owner: Dict) -> D
     }
 
 
+def cap_pooled_tax_to_economic_gains(
+    tax_from_portfolio_basis_eur: float,
+    total_economic_gains_eur: float,
+    tax_rate: float,
+) -> float:
+    """Do not tax the owner pool above the selected rate on its economic gains."""
+    return min(
+        max(float(tax_from_portfolio_basis_eur), 0.0),
+        max(float(total_economic_gains_eur), 0.0) * tax_rate,
+    )
+
+
 def calculate_historical_portfolio_peak(histories: Dict, stocks: List[Dict]):
     """Return the peak daily-close value for the current portfolio composition."""
     non_cash_stocks = [stock for stock in stocks if stock.get("symbol") != "CASH"]
@@ -887,17 +899,23 @@ class PortfolioDashboard:
                 "investment": owner_investment,
                 "earnings": owner_preview["economic_gain_eur"],
             }
-        owner_tax_allocations = allocate_tax_by_earnings(
+        earnings_by_owner = {
+            username: inputs["earnings"]
+            for username, inputs in owner_inputs.items()
+        }
+        payable_pooled_tax = cap_pooled_tax_to_economic_gains(
             total_simulation["estimated_tax_eur"],
-            {
-                username: inputs["earnings"]
-                for username, inputs in owner_inputs.items()
-            },
+            sum(earnings_by_owner.values()),
+            tax_rate,
+        )
+        owner_tax_allocations = allocate_tax_by_earnings(
+            payable_pooled_tax,
+            earnings_by_owner,
         )
 
         invested_capital = get_confirmed_user_investment(user["username"], USERS)
         allocated_tax = (
-            total_simulation["estimated_tax_eur"]
+            payable_pooled_tax
             if user["username"] == "user"
             else owner_tax_allocations[user["username"]]
         )
@@ -1010,8 +1028,6 @@ class PortfolioDashboard:
                 hide_index=True,
             )
 
-        st.info(get_text("tax_simulation_disclaimer", lang))
-
     def show_portfolio_heatmap(
         self,
         stocks_with_prices: List[Dict],
@@ -1123,13 +1139,11 @@ class PortfolioDashboard:
                 ),
             ),
             customdata=list(zip(names, colors)),
-            texttemplate="<b>%{label}</b><br>%{percentRoot:.1%}<br>%{customdata[1]:+.2f}%",
+            texttemplate="<b>%{label}</b><br>%{customdata[1]:+.2f}%",
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>"
                 + get_text("your_value", lang)
                 + ": EUR %{value:,.2f}<br>"
-                + get_text("portfolio_share", lang)
-                + ": %{percentRoot:.2%}<br>"
                 + return_label
                 + ": %{customdata[1]:+.2f}%<extra></extra>"
             ),
