@@ -14,7 +14,7 @@ from price_fetcher import (
     fetch_stock_history_eur,
     get_return_base_price_eur,
 )
-from config import STOCKS
+from config import ASSET_SNAPSHOT_DATE, STOCKS
 from ownership import (
     get_ownership_percentage,
     get_unit_balances,
@@ -52,6 +52,142 @@ def _display_symbol(stock: Dict) -> str:
 
 def _user_percentage(user: Dict) -> float:
     return get_ownership_percentage(user["username"])
+
+
+def build_portfolio_heatmap_rows(
+    stocks: List[Dict],
+    user_percentage: float = 1.0,
+    include_cash: bool = True,
+    color_mode: str = "daily",
+) -> List[Dict]:
+    """Return leaf data for a value-sized, return-colored portfolio treemap."""
+    if color_mode not in {"daily", "since_purchase"}:
+        raise ValueError(f"Unsupported heatmap color mode: {color_mode}")
+
+    rows = []
+    for stock in stocks:
+        is_cash = stock.get("symbol") == "CASH"
+        if is_cash and not include_cash:
+            continue
+
+        current_price = float(stock.get("current_price", stock.get("price", 0.0)))
+        position_value = float(stock.get("quantity", 0.0)) * current_price
+        user_value = position_value * user_percentage
+        if user_value <= 0:
+            continue
+
+        if color_mode == "daily":
+            previous_close = stock.get("previous_close")
+            performance = (
+                (current_price - float(previous_close)) / float(previous_close) * 100
+                if previous_close is not None and float(previous_close) > 0
+                else 0.0
+            )
+        else:
+            cost_basis = float(stock.get("cost_basis_eur", 0.0))
+            performance = (
+                (position_value - cost_basis) / cost_basis * 100
+                if cost_basis > 0
+                else 0.0
+            )
+
+        rows.append({
+            "key": _stock_key(stock),
+            "symbol": _display_symbol(stock),
+            "name": stock.get("name", _display_symbol(stock)),
+            "industry": "Cash" if is_cash else (stock.get("industry") or "Other"),
+            "value_eur": user_value,
+            "performance_pct": performance,
+            "quantity": float(stock.get("quantity", 0.0)) * user_percentage,
+        })
+
+    return rows
+
+
+def get_confirmed_portfolio_capital_events(users: List[Dict]) -> List[Dict]:
+    """Collect the owner ledger's net capital events without double-counting initials."""
+    events = []
+    for owner in users:
+        if owner.get("username") == "user":
+            continue
+
+        payments = owner.get("payments")
+        if payments is not None:
+            for payment in payments:
+                events.append({
+                    "date": payment["date"],
+                    "amount_eur": float(payment["amount"]),
+                    "owner": owner["username"],
+                })
+        elif owner.get("paid_date") and owner.get("initial_investment") is not None:
+            events.append({
+                "date": owner["paid_date"],
+                "amount_eur": float(owner["initial_investment"]),
+                "owner": owner["username"],
+            })
+
+    return sorted(events, key=lambda event: event["date"])
+
+
+def build_confirmed_capital_series(users: List[Dict], as_of) -> pd.DataFrame:
+    """Return month-level cumulative net capital attributed to all owners."""
+    events = get_confirmed_portfolio_capital_events(users)
+    if not events:
+        return pd.DataFrame(columns=["Date", "Net Pay-ins", "Cumulative Pay-ins"])
+
+    event_frame = pd.DataFrame(events)
+    event_frame["Date"] = (
+        pd.to_datetime(event_frame["date"])
+        .dt.to_period("M")
+        .dt.to_timestamp()
+    )
+    monthly = (
+        event_frame.groupby("Date", as_index=False)["amount_eur"]
+        .sum()
+        .rename(columns={"amount_eur": "Net Pay-ins"})
+        .sort_values("Date")
+    )
+    current_month = pd.Timestamp(as_of).to_period("M").to_timestamp()
+    if current_month not in set(monthly["Date"]):
+        monthly = pd.concat([
+            monthly,
+            pd.DataFrame([{"Date": current_month, "Net Pay-ins": 0.0}]),
+        ]).sort_values("Date")
+    monthly["Cumulative Pay-ins"] = monthly["Net Pay-ins"].cumsum()
+    return monthly.reset_index(drop=True)
+
+
+def calculate_tax_simulation(
+    stocks: List[Dict],
+    user_percentage: float = 1.0,
+    tax_rate: float = 0.25,
+) -> Dict:
+    """Estimate liquidation tax on the portfolio's net unrealized gain."""
+    if not 0 <= tax_rate < 1:
+        raise ValueError("Tax rate must be between zero and one")
+
+    gross_value = 0.0
+    cost_basis = 0.0
+    for stock in stocks:
+        current_price = float(stock.get("current_price", stock.get("price", 0.0)))
+        gross_value += float(stock.get("quantity", 0.0)) * current_price
+        cost_basis += float(stock.get("cost_basis_eur", 0.0))
+
+    gross_value *= user_percentage
+    cost_basis *= user_percentage
+    unrealized_gain = max(gross_value - cost_basis, 0.0)
+    estimated_tax = unrealized_gain * tax_rate
+    net_liquidation_value = gross_value - estimated_tax
+    gross_up_reference = gross_value / (1.0 - tax_rate)
+    return {
+        "gross_value_eur": gross_value,
+        "cost_basis_eur": cost_basis,
+        "unrealized_gain_eur": unrealized_gain,
+        "estimated_tax_eur": estimated_tax,
+        "net_liquidation_value_eur": net_liquidation_value,
+        "gross_up_reference_eur": gross_up_reference,
+        "tax_rate": tax_rate,
+    }
 
 
 def calculate_historical_portfolio_peak(histories: Dict, stocks: List[Dict]):
@@ -403,6 +539,14 @@ class PortfolioDashboard:
         if should_show_celebration_divider(celebration_return):
             st.markdown("---")
 
+        self.show_portfolio_heatmap(stocks_with_prices, user, lang)
+
+        st.markdown("---")
+
+        self.show_tax_overview(stocks_with_prices, user, lang)
+
+        st.markdown("---")
+
         # Investment tranche performance (moved up for better visibility)
         self.show_investment_tranches(user, stocks_with_prices, lang)
 
@@ -411,6 +555,9 @@ class PortfolioDashboard:
         # Show user overview if this is the "user" account
         if user['username'] == 'user':
             self.show_all_users_overview(stocks_with_prices, lang)
+            st.markdown("---")
+
+            self.show_admin_aum_chart(stocks_with_prices, lang)
             st.markdown("---")
 
             # Show login statistics for admin
@@ -538,6 +685,358 @@ class PortfolioDashboard:
                 format_currency(current_total, lang),
                 f"Unit price {format_currency(float(current_unit_price), lang)}",
             )
+
+    def show_admin_aum_chart(self, stocks_with_prices: List[Dict], lang: str):
+        """Show exact current AUM decomposed against the confirmed capital ledger."""
+        from config import USERS
+
+        total_aum = self.price_fetcher.get_portfolio_value(stocks_with_prices)
+        capital_events = get_confirmed_portfolio_capital_events(USERS)
+        confirmed_capital = sum(event["amount_eur"] for event in capital_events)
+        earnings = total_aum - confirmed_capital
+        earnings_pct = earnings / confirmed_capital * 100 if confirmed_capital else 0.0
+
+        st.subheader(get_text("aum_decomposition", lang))
+        st.caption(get_text("aum_decomposition_description", lang))
+
+        self._show_metric_grid([
+            {
+                "label": get_text("assets_under_management", lang),
+                "value": format_currency(total_aum, lang),
+            },
+            {
+                "label": get_text("confirmed_net_payins", lang),
+                "value": format_currency(confirmed_capital, lang),
+            },
+            {
+                "label": get_text("earnings_residual", lang),
+                "value": format_currency_change(earnings, lang),
+                "delta": f"{earnings_pct:+.1f}%" if confirmed_capital else None,
+            },
+        ])
+
+        bridge = go.Figure(go.Waterfall(
+            orientation="v",
+            measure=["relative", "relative", "total"],
+            x=[
+                get_text("confirmed_net_payins", lang),
+                get_text("earnings_residual", lang),
+                get_text("assets_under_management", lang),
+            ],
+            y=[confirmed_capital, earnings, 0],
+            text=[
+                format_currency(confirmed_capital, lang),
+                format_currency_change(earnings, lang),
+                format_currency(total_aum, lang),
+            ],
+            textposition="outside",
+            connector=dict(line=dict(color="#9aa59d", width=1.5, dash="dot")),
+            increasing=dict(marker=dict(color="#176b4d")),
+            decreasing=dict(marker=dict(color="#b42318")),
+            totals=dict(marker=dict(color="#294b43")),
+            hovertemplate="%{x}<br>EUR %{y:,.2f}<extra></extra>",
+        ))
+        bridge.update_layout(
+            title=get_text("aum_bridge_title", lang),
+            yaxis_title="EUR",
+            height=430,
+            showlegend=False,
+        )
+        self._plotly_chart(bridge, key="admin_aum_bridge")
+
+        capital_series = build_confirmed_capital_series(USERS, ASSET_SNAPSHOT_DATE)
+        if not capital_series.empty:
+            capital_chart = go.Figure()
+            capital_chart.add_trace(go.Scatter(
+                x=capital_series["Date"],
+                y=capital_series["Cumulative Pay-ins"],
+                mode="lines",
+                name=get_text("confirmed_net_payins", lang),
+                line=dict(color="#54706a", width=3, shape="hv"),
+                fill="tozeroy",
+                fillcolor="rgba(84, 112, 106, 0.14)",
+                hovertemplate="%{x|%b %Y}<br>EUR %{y:,.2f}<extra></extra>",
+            ))
+            current_date = pd.Timestamp(ASSET_SNAPSHOT_DATE)
+            capital_chart.add_trace(go.Scatter(
+                x=[current_date],
+                y=[total_aum],
+                mode="markers",
+                name=get_text("current_aum", lang),
+                marker=dict(color="#176b4d", size=14, symbol="diamond"),
+                hovertemplate="%{x|%d %b %Y}<br>EUR %{y:,.2f}<extra></extra>",
+            ))
+            capital_chart.add_trace(go.Scatter(
+                x=[current_date, current_date],
+                y=[confirmed_capital, total_aum],
+                mode="lines",
+                name=get_text("earnings_residual", lang),
+                line=dict(color="#a6782d", width=3, dash="dot"),
+                hoverinfo="skip",
+            ))
+            capital_chart.update_layout(
+                title=get_text("capital_timeline_title", lang),
+                xaxis_title=get_text("date", lang),
+                yaxis_title="EUR",
+                height=430,
+                hovermode="x unified",
+            )
+            self._plotly_chart(capital_chart, key="admin_capital_timeline")
+
+        st.info(get_text("aum_history_limit", lang))
+
+    def show_tax_overview(
+        self,
+        stocks_with_prices: List[Dict],
+        user: Dict,
+        lang: str,
+    ):
+        """Show a simple, explicitly caveated tax and liquidation simulation."""
+        from config import USERS
+
+        st.subheader(get_text("tax_overview", lang))
+        st.caption(get_text("tax_overview_description", lang))
+
+        tax_model = st.radio(
+            get_text("tax_model", lang),
+            options=["capital_gains", "capital_gains_soli"],
+            format_func=lambda model: get_text(
+                "tax_model_25" if model == "capital_gains" else "tax_model_26375",
+                lang,
+            ),
+            horizontal=True,
+            key=f"tax_model_{user['username']}",
+        )
+        tax_rate = 0.25 if tax_model == "capital_gains" else 0.26375
+        simulation = calculate_tax_simulation(
+            stocks_with_prices,
+            user_percentage=_user_percentage(user),
+            tax_rate=tax_rate,
+        )
+
+        self._show_metric_grid([
+            {
+                "label": get_text("gross_asset_value", lang),
+                "value": format_currency(simulation["gross_value_eur"], lang),
+            },
+            {
+                "label": get_text("unrealized_gain", lang),
+                "value": format_currency_change(simulation["unrealized_gain_eur"], lang),
+            },
+            {
+                "label": get_text("estimated_tax", lang),
+                "value": format_currency_change(-simulation["estimated_tax_eur"], lang),
+            },
+            {
+                "label": get_text("net_liquidation_value", lang),
+                "value": format_currency(simulation["net_liquidation_value_eur"], lang),
+            },
+            {
+                "label": get_text("gross_up_reference", lang, tax_rate * 100),
+                "value": format_currency(simulation["gross_up_reference_eur"], lang),
+            },
+        ])
+
+        comparison = go.Figure(go.Bar(
+            x=[
+                get_text("gross_asset_value", lang),
+                get_text("net_liquidation_value", lang),
+                get_text("gross_up_short", lang),
+            ],
+            y=[
+                simulation["gross_value_eur"],
+                simulation["net_liquidation_value_eur"],
+                simulation["gross_up_reference_eur"],
+            ],
+            marker_color=["#54706a", "#176b4d", "#a6782d"],
+            text=[
+                format_currency(simulation["gross_value_eur"], lang),
+                format_currency(simulation["net_liquidation_value_eur"], lang),
+                format_currency(simulation["gross_up_reference_eur"], lang),
+            ],
+            textposition="outside",
+            hovertemplate="%{x}<br>EUR %{y:,.2f}<extra></extra>",
+        ))
+        comparison.update_layout(
+            title=get_text("tax_value_comparison", lang),
+            yaxis_title="EUR",
+            height=430,
+            showlegend=False,
+        )
+        self._plotly_chart(
+            comparison,
+            key=f"tax_value_comparison_{user['username']}_{tax_model}",
+        )
+
+        if user["username"] == "user":
+            owner_rows = []
+            for owner in USERS:
+                if owner["username"] == "user":
+                    continue
+                owner_simulation = calculate_tax_simulation(
+                    stocks_with_prices,
+                    user_percentage=get_ownership_percentage(owner["username"]),
+                    tax_rate=tax_rate,
+                )
+                owner_rows.append({
+                    get_text("username", lang): format_user_display_name(owner["username"]),
+                    get_text("gross_asset_value", lang): owner_simulation["gross_value_eur"],
+                    get_text("unrealized_gain", lang): owner_simulation["unrealized_gain_eur"],
+                    get_text("estimated_tax", lang): owner_simulation["estimated_tax_eur"],
+                    get_text("net_liquidation_value", lang): owner_simulation["net_liquidation_value_eur"],
+                    get_text("gross_up_short", lang): owner_simulation["gross_up_reference_eur"],
+                })
+
+            owner_tax_frame = pd.DataFrame(owner_rows)
+            currency_columns = list(owner_tax_frame.columns[1:])
+            formatted_tax_frame = owner_tax_frame.copy()
+            for column in currency_columns:
+                formatted_tax_frame[column] = formatted_tax_frame[column].apply(
+                    lambda value: format_currency(value, lang)
+                )
+            st.dataframe(
+                formatted_tax_frame,
+                use_container_width=True,
+                hide_index=True,
+            )
+
+        st.info(get_text("tax_simulation_disclaimer", lang))
+
+    def show_portfolio_heatmap(
+        self,
+        stocks_with_prices: List[Dict],
+        user: Dict,
+        lang: str,
+    ):
+        """Show a Finviz-style map of the user's actual portfolio positions."""
+        st.subheader(get_text("portfolio_heatmap", lang))
+        st.caption(get_text("portfolio_heatmap_description", lang))
+
+        control_col, cash_col = st.columns([2, 1])
+        with control_col:
+            color_mode = st.radio(
+                get_text("heatmap_color_by", lang),
+                options=["daily", "since_purchase"],
+                format_func=lambda mode: get_text(
+                    "heatmap_daily" if mode == "daily" else "heatmap_since_purchase",
+                    lang,
+                ),
+                horizontal=True,
+                key=f"portfolio_heatmap_color_{user['username']}",
+            )
+        with cash_col:
+            include_cash = st.checkbox(
+                get_text("heatmap_include_cash", lang),
+                value=True,
+                key=f"portfolio_heatmap_cash_{user['username']}",
+            )
+
+        rows = build_portfolio_heatmap_rows(
+            stocks_with_prices,
+            user_percentage=_user_percentage(user),
+            include_cash=include_cash,
+            color_mode=color_mode,
+        )
+        if not rows:
+            st.info(get_text("heatmap_no_positions", lang))
+            return
+
+        group_rows = {}
+        for row in rows:
+            translated_industry = get_text(row["industry"], lang)
+            group = group_rows.setdefault(
+                translated_industry,
+                {"value_eur": 0.0, "weighted_return": 0.0},
+            )
+            group["value_eur"] += row["value_eur"]
+            group["weighted_return"] += row["value_eur"] * row["performance_pct"]
+
+        total_value = sum(row["value_eur"] for row in rows)
+        portfolio_return = (
+            sum(row["value_eur"] * row["performance_pct"] for row in rows)
+            / total_value
+        )
+
+        ids = ["portfolio"]
+        labels = [get_text("portfolio", lang)]
+        parents = [""]
+        values = [total_value]
+        colors = [portfolio_return]
+        names = [get_text("portfolio", lang)]
+
+        for industry, group in sorted(group_rows.items()):
+            industry_id = f"industry::{industry}"
+            ids.append(industry_id)
+            labels.append(industry)
+            parents.append("portfolio")
+            values.append(group["value_eur"])
+            colors.append(group["weighted_return"] / group["value_eur"])
+            names.append(industry)
+
+        for row in sorted(rows, key=lambda item: item["value_eur"], reverse=True):
+            translated_industry = get_text(row["industry"], lang)
+            ids.append(f"position::{row['key']}")
+            labels.append(row["symbol"])
+            parents.append(f"industry::{translated_industry}")
+            values.append(row["value_eur"])
+            colors.append(row["performance_pct"])
+            names.append(row["name"])
+
+        color_bound = max(3.0, min(25.0, max(abs(value) for value in colors)))
+        return_label = get_text(
+            "heatmap_daily" if color_mode == "daily" else "heatmap_since_purchase",
+            lang,
+        )
+        fig = go.Figure(go.Treemap(
+            ids=ids,
+            labels=labels,
+            parents=parents,
+            values=values,
+            branchvalues="total",
+            marker=dict(
+                colors=colors,
+                colorscale=[
+                    [0.00, "#991b1b"],
+                    [0.30, "#dc4c4c"],
+                    [0.50, "#52615a"],
+                    [0.70, "#2f9469"],
+                    [1.00, "#087443"],
+                ],
+                cmin=-color_bound,
+                cmax=color_bound,
+                line=dict(color="#f6f8fb", width=2),
+                colorbar=dict(
+                    title=f"{return_label} (%)",
+                    ticksuffix="%",
+                    thickness=14,
+                    len=0.72,
+                ),
+            ),
+            customdata=names,
+            texttemplate="<b>%{label}</b><br>%{percentRoot:.1%}<br>%{color:+.2f}%",
+            hovertemplate=(
+                "<b>%{customdata}</b><br>"
+                + get_text("your_value", lang)
+                + ": EUR %{value:,.2f}<br>"
+                + get_text("portfolio_share", lang)
+                + ": %{percentRoot:.2%}<br>"
+                + return_label
+                + ": %{color:+.2f}%<extra></extra>"
+            ),
+            textfont=dict(color="#ffffff", size=15),
+            tiling=dict(packing="squarify", pad=2),
+            pathbar=dict(visible=True),
+            root=dict(color="#52615a"),
+        ))
+        fig.update_layout(
+            height=650,
+            margin=dict(l=8, r=8, t=12, b=8),
+            uniformtext=dict(minsize=10, mode="hide"),
+        )
+        self._plotly_chart(
+            fig,
+            key=f"portfolio_heatmap_{user['username']}_{color_mode}_{include_cash}",
+        )
     
     def show_historical_performance_chart(self, user: Dict, lang: str):
         """Show historical portfolio performance vs the MSCI World holding."""
