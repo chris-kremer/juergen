@@ -9,7 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 from typing import List, Dict
-from price_fetcher import PriceFetcher, fetch_yfinance_history
+from price_fetcher import PriceFetcher, fetch_stock_history_eur
 from config import STOCKS
 from translations import format_user_display_name, get_language, get_text, format_currency, format_currency_change
 from celebration import (
@@ -24,22 +24,37 @@ from ui_theme import build_dashboard_header
 pio.templates.default = "plotly_white"
 px.defaults.template = "plotly_white"
 
+BENCHMARK_ISIN = "IE00B4L5Y983"
+BENCHMARK_LABEL = "MSCI World"
+
+
+def _is_benchmark(stock: Dict) -> bool:
+    return stock.get("isin") == BENCHMARK_ISIN
+
+
+def _stock_key(stock: Dict) -> str:
+    return stock.get("isin") or stock.get("symbol") or stock.get("wkn") or stock["name"]
+
+
+def _display_symbol(stock: Dict) -> str:
+    return stock.get("symbol") or stock.get("wkn") or stock["name"]
+
 
 def calculate_historical_portfolio_peak(histories: Dict, stocks: List[Dict]):
     """Return the peak daily-close value for the current portfolio composition."""
-    non_cash_stocks = [stock for stock in stocks if stock["symbol"] != "CASH"]
+    non_cash_stocks = [stock for stock in stocks if stock.get("symbol") != "CASH"]
     if any(
-        stock["symbol"] not in histories
-        or histories[stock["symbol"]] is None
-        or histories[stock["symbol"]].empty
+        _stock_key(stock) not in histories
+        or histories[_stock_key(stock)] is None
+        or histories[_stock_key(stock)].empty
         for stock in non_cash_stocks
     ):
         return None
 
     position_series = []
     for stock in non_cash_stocks:
-        closes = histories[stock["symbol"]]["Close"].astype(float)
-        closes.name = stock["symbol"]
+        closes = histories[_stock_key(stock)]["Close"].astype(float)
+        closes.name = _stock_key(stock)
         position_series.append(closes * stock["quantity"])
 
     if not position_series:
@@ -54,7 +69,7 @@ def calculate_historical_portfolio_peak(histories: Dict, stocks: List[Dict]):
     cash_value = sum(
         stock["quantity"] * stock.get("price", 1.0)
         for stock in stocks
-        if stock["symbol"] == "CASH"
+        if stock.get("symbol") == "CASH"
     )
     daily_totals = portfolio_history.sum(axis=1) + cash_value
     return float(daily_totals.max())
@@ -226,10 +241,10 @@ class PortfolioDashboard:
         end_date = date.today() + timedelta(days=1)
         histories = {}
         for stock in stocks:
-            if stock["symbol"] == "CASH":
+            if stock.get("symbol") == "CASH":
                 continue
-            histories[stock["symbol"]] = fetch_yfinance_history(
-                stock["symbol"],
+            histories[_stock_key(stock)] = fetch_stock_history_eur(
+                stock,
                 start=start_date,
                 end=end_date,
             )
@@ -288,13 +303,13 @@ class PortfolioDashboard:
         # Calculate top performers for metrics row
         stock_changes = []
         for stock in stocks_with_prices:
-            if stock['symbol'] == 'CASH':
+            if stock.get('symbol') == 'CASH':
                 continue
             daily_change_pct = self.price_fetcher.get_daily_change_percentage(stock)
             daily_change_value = self.price_fetcher.get_user_daily_change_value(stock, user['portfolio_percentage'])
             if stock.get('price_source') == 'live':
                 stock_changes.append({
-                    'symbol': stock['symbol'],
+                    'symbol': _display_symbol(stock),
                     'name': stock['name'],
                     'daily_change_pct': daily_change_pct,
                     'daily_change_value': daily_change_value,
@@ -503,7 +518,7 @@ class PortfolioDashboard:
             st.metric("Current Total", format_currency(current_total, lang))
     
     def show_historical_performance_chart(self, user: Dict, lang: str):
-        """Show historical portfolio performance vs URTH benchmark with progressive loading"""
+        """Show historical portfolio performance vs the MSCI World holding."""
         
         st.subheader(get_text('historical_performance', lang))
         
@@ -591,7 +606,7 @@ class PortfolioDashboard:
             x=sample_dates,
             y=initial_urth_values,
             mode='lines',
-            name='URTH Benchmark',
+            name=f'{BENCHMARK_LABEL} Benchmark',
             line=dict(color='#ff7f0e', width=2, dash='dash')
         ))
         
@@ -689,7 +704,7 @@ class PortfolioDashboard:
                 
                 with col2:
                     st.metric(
-                        "URTH Performance", 
+                        f"{BENCHMARK_LABEL} Performance",
                         f"{urth_values[-1]:.1f}",
                         f"{urth_change:+.1f}"
                     )
@@ -714,10 +729,10 @@ class PortfolioDashboard:
 
         histories = {}
         for stock in STOCKS:
-            if stock['symbol'] == 'CASH':
+            if stock.get('symbol') == 'CASH':
                 continue
-            histories[stock['symbol']] = fetch_yfinance_history(
-                stock['symbol'],
+            histories[_stock_key(stock)] = fetch_stock_history_eur(
+                stock,
                 start=start_date,
                 end=end_date,
             )
@@ -739,7 +754,7 @@ class PortfolioDashboard:
         return float(window['Close'].iloc[-1])
 
     def _get_single_date_data(self, date, user, history_by_symbol=None):
-        """Get portfolio and URTH values for a single date"""
+        """Get portfolio and benchmark values for a single date, all in EUR."""
         try:
             from datetime import timedelta
             
@@ -748,7 +763,7 @@ class PortfolioDashboard:
             
             # Get data for each stock on this date
             for stock in STOCKS:
-                if stock['symbol'] == 'CASH':
+                if stock.get('symbol') == 'CASH':
                     total_portfolio_value += stock['quantity'] * 1.0
                     continue
                 
@@ -757,15 +772,15 @@ class PortfolioDashboard:
                     end_date = date + timedelta(days=5)
 
                     if history_by_symbol is not None:
-                        hist = history_by_symbol.get(stock['symbol'])
+                        hist = history_by_symbol.get(_stock_key(stock))
                     else:
-                        hist = fetch_yfinance_history(stock['symbol'], start=start_date, end=end_date)
+                        hist = fetch_stock_history_eur(stock, start=start_date, end=end_date)
 
                     price = self._get_price_from_history_window(hist, start_date, end_date)
                     if price is None:
                         price = stock['price']
                     
-                    if stock['symbol'] == 'URTH':
+                    if _is_benchmark(stock):
                         urth_price = price
                     
                     total_portfolio_value += stock['quantity'] * price
@@ -773,23 +788,23 @@ class PortfolioDashboard:
                 except:
                     # Use default price if error
                     price = stock['price']
-                    if stock['symbol'] == 'URTH':
+                    if _is_benchmark(stock):
                         urth_price = price
                     total_portfolio_value += stock['quantity'] * price
             
             # Calculate user's portfolio value
             user_portfolio_value = total_portfolio_value * user['portfolio_percentage']
             
-            # If no URTH price found, use default
+            # If no benchmark price was available, use its EUR snapshot price.
             if urth_price is None:
-                urth_price = next((s['price'] for s in STOCKS if s['symbol'] == 'URTH'), 100)
+                urth_price = next((s['price'] for s in STOCKS if _is_benchmark(s)), 100)
             
             return user_portfolio_value, urth_price
             
         except Exception as e:
             # Return default values on error
             default_portfolio = sum(s['quantity'] * s['price'] for s in STOCKS) * user['portfolio_percentage']
-            default_urth = next((s['price'] for s in STOCKS if s['symbol'] == 'URTH'), 100)
+            default_urth = next((s['price'] for s in STOCKS if _is_benchmark(s)), 100)
             return default_portfolio, default_urth
     
     def show_individual_stock_performance_chart(self, user: Dict, lang: str):
@@ -810,18 +825,19 @@ class PortfolioDashboard:
         progress_bar = st.progress(0)
 
         # Get all non-cash stocks
-        non_cash_stocks = [s for s in STOCKS if s['symbol'] != 'CASH']
+        non_cash_stocks = [s for s in STOCKS if s.get('symbol') != 'CASH']
         total_stocks = len(non_cash_stocks)
 
         # Collect data for all stocks
         all_stock_data = []
 
         for idx, stock in enumerate(non_cash_stocks):
-            progress_text.text(f"Loading data for {stock['symbol']}... ({idx + 1}/{total_stocks})")
+            display_symbol = _display_symbol(stock)
+            progress_text.text(f"Loading data for {display_symbol}... ({idx + 1}/{total_stocks})")
             progress_bar.progress((idx + 1) / total_stocks)
 
             try:
-                hist = fetch_yfinance_history(stock['symbol'], start=start_date, end=end_date)
+                hist = fetch_stock_history_eur(stock, start=start_date, end=end_date)
 
                 if not hist.empty and len(hist) > 1:
                     # Normalize to percentage change from start
@@ -830,7 +846,7 @@ class PortfolioDashboard:
                     normalized_values = [((float(price) - base_price) / base_price * 100) for price in hist['Close']]
 
                     all_stock_data.append({
-                        'symbol': stock['symbol'],
+                        'symbol': display_symbol,
                         'name': stock['name'],
                         'dates': dates,
                         'values': normalized_values
@@ -951,36 +967,36 @@ class PortfolioDashboard:
         # Prepare data for chart
         returns_data = []
         for stock in historical_stocks:
-            if stock['symbol'] == 'CASH':  # Skip cash
+            if stock.get('symbol') == 'CASH':  # Skip cash
                 continue
                 
             change_percentage = stock.get('historical_change', 0)
             
             # Only include positions with meaningful changes or if they have live prices
             if abs(change_percentage) > 0.01 or stock.get('price_source') == 'live':
-                # Special color for URTH (benchmark)
-                if stock['symbol'] == 'URTH':
+                # Special color for the portfolio's MSCI World benchmark holding.
+                if _is_benchmark(stock):
                     color = '#1f77b4'  # Blue for benchmark
                 else:
                     color = '#00AA00' if change_percentage >= 0 else '#FF4444'  # Green/red for others
                 
                 returns_data.append({
-                    'Symbol': stock['symbol'],
+                    'Symbol': _display_symbol(stock),
                     'Name': stock['name'],
                     'Return (%)': change_percentage,
                     'Color': color,
-                    'Is_Benchmark': stock['symbol'] == 'URTH'
+                    'Is_Benchmark': _is_benchmark(stock)
                 })
         
         if returns_data:
-            # Separate URTH (benchmark) from other stocks
-            urth_data = [x for x in returns_data if x['Symbol'] == 'URTH']
-            other_data = [x for x in returns_data if x['Symbol'] != 'URTH']
+            # Put the benchmark holding before all other positions.
+            urth_data = [x for x in returns_data if x['Is_Benchmark']]
+            other_data = [x for x in returns_data if not x['Is_Benchmark']]
             
             # Sort other stocks by return percentage (highest gain to highest loss)
             other_data.sort(key=lambda x: x['Return (%)'], reverse=True)
             
-            # Put URTH first, then other stocks
+            # Put the benchmark first, then the other positions.
             returns_data = urth_data + other_data
             
             df = pd.DataFrame(returns_data)
@@ -1011,15 +1027,15 @@ class PortfolioDashboard:
             # Add zero line
             fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
             
-            # Add URTH benchmark line
-            urth_return = next((item['Return (%)'] for item in returns_data if item['Symbol'] == 'URTH'), None)
+            # Add the MSCI World benchmark line.
+            urth_return = next((item['Return (%)'] for item in returns_data if item['Is_Benchmark']), None)
             if urth_return is not None:
                 fig.add_hline(
                     y=urth_return, 
                     line_dash="dot", 
                     line_color="#1f77b4", 
                     opacity=0.7,
-                    annotation_text=f"URTH Benchmark: {urth_return:.1f}%",
+                    annotation_text=f"{BENCHMARK_LABEL} Benchmark: {urth_return:.1f}%",
                     annotation_position="top right"
                 )
             
@@ -1054,7 +1070,7 @@ class PortfolioDashboard:
                 value = self.price_fetcher.get_stock_value(stock) * user['portfolio_percentage']
                 if value > 0:  # Only show non-zero values
                     chart_data.append({
-                        'Symbol': stock['symbol'],
+                        'Symbol': _display_symbol(stock),
                         'Name': stock['name'],
                         'Value': value,
                         'Industry': stock.get('industry', 'Other')
@@ -1265,7 +1281,7 @@ class PortfolioDashboard:
                 industry = get_text(industry, lang)
             
             table_data.append({
-                get_text('symbol', lang): stock['symbol'],
+                get_text('symbol', lang): _display_symbol(stock),
                 get_text('name', lang): stock['name'],
                 get_text('industry', lang): industry,
                 get_text('your_quantity', lang): your_quantity,
@@ -1617,7 +1633,7 @@ class PortfolioDashboard:
         total_value = 0
 
         for stock in STOCKS:
-            if stock['symbol'] == 'CASH':
+            if stock.get('symbol') == 'CASH':
                 total_value += stock['quantity'] * 1.0
                 continue
 
@@ -1625,7 +1641,7 @@ class PortfolioDashboard:
                 # Get data around this date (±5 days for buffer)
                 start_date = date - timedelta(days=5)
                 end_date = date + timedelta(days=5)
-                hist = fetch_yfinance_history(stock['symbol'], start=start_date, end=end_date)
+                hist = fetch_stock_history_eur(stock, start=start_date, end=end_date)
                 price = self._get_price_from_history_window(hist, start_date, end_date)
                 if price is None:
                     price = stock['price']

@@ -11,7 +11,7 @@ USERS = [
     },
     {
         "username": "foehr",
-        "portfolio_percentage": 0.092279807,
+        "portfolio_percentage": 0.092131802143,
         "initial_investment": 20000,
         "payments": [
             {"amount": 20000, "date": "2025-07-01"},
@@ -30,13 +30,13 @@ USERS = [
     },
     {
         "username": "kremer",
-        "portfolio_percentage": 0.526984934,
+        "portfolio_percentage": 0.526139718428,
         "initial_investment": 130000,
         "paid_date": "2022-01-01"
     },
     {
         "username": "annika",
-        "portfolio_percentage": 0.004618969,
+        "portfolio_percentage": 0.004611560772,
         "initial_investment": 200,
         "payments": [
             {"amount": 100, "date": "2024-09-01"},
@@ -69,7 +69,7 @@ USERS = [
     },
     {
         "username": "juergen",
-        "portfolio_percentage": 0.239122194,
+        "portfolio_percentage": 0.238738672975,
         "initial_investment": 50000,
         "payments": [
             {"amount": 50000, "date": "2025-06-01"},
@@ -78,7 +78,7 @@ USERS = [
     },
     {
         "username": "christian",
-        "portfolio_percentage": 0.138600543,
+        "portfolio_percentage": 0.138378245682,
         "initial_investment": 30000,
         "payments": [
             {"amount": 30000, "date": "2022-01-01", "type": "Initial investment"},
@@ -94,21 +94,135 @@ USERS = [
     }
 ]
 
-STOCKS = [
-    {"symbol": "UQ2B.F", "quantity": 5.4, "price": 365.00, "name": "Index Fund", "industry": "Index"},
-    {"symbol": "BP", "quantity": 143.0, "price": 4.41, "name": "BP", "industry": "Oil & Gas"},
-    {"symbol": "C", "quantity": 282.0, "price": 73.64, "name": "Citigroup", "industry": "Bank"},
-    {"symbol": "HEI.DE", "quantity": 185.0, "price": 192.25, "name": "Heidelberg Materials", "industry": "Materials"},
-    {"symbol": "EXV1.DE", "quantity": 284.0, "price": 27.83, "name": "Index Fund", "industry": "European Banks"},
-    {"symbol": "URTH", "quantity": 493.0, "price": 100.48, "name": "Index Fund", "industry": "Index"},
-    {"symbol": "DAX", "quantity": 60.0, "price": 217.75, "name": "Index Fund", "industry": "DAX"},
-    {"symbol": "PLTR", "quantity": 85.0, "price": 113.08, "name": "Palantir", "industry": "Software"},
-    {"symbol": "SHEL", "quantity": 74.0, "price": 30.61, "name": "Shell", "industry": "Oil & Gas"},
-    {"symbol": "WFC", "quantity": 340.0, "price": 70.36, "name": "Wells Fargo", "industry": "Bank"},
-    {"symbol": "3BAL.L", "quantity": 7.5, "price": 29.70, "name": "Index Fund", "industry": "European Banks"},
-    {"symbol": "DBPG.DE", "quantity": 47.0, "price": 212.65, "name": "Index Fund", "industry": "Index"},
-    {"symbol": "GS", "quantity": 8.0, "price": 608.10, "name": "Goldman Sachs", "industry": "Bank"},
-    {"symbol": "LUV", "quantity": 80.0, "price": 28.79, "name": "Southwest (Airline)", "industry": "Airlines"},
-    {"symbol": "UAL", "quantity": 50.0, "price": 68.92, "name": "United (Airline)", "industry": "Airlines"},
-    {"symbol": "CASH", "quantity": 147358.0, "price": 1.00, "name": "Cash", "industry": None}
+ASSET_SNAPSHOT_DATE = "2026-08-11"
+PENDING_CASH_WITHDRAWAL_EUR = 4000.00
+
+# Legal positions exactly as reported by the two custody accounts. Quantities are
+# never adjusted for exchange rates, ADR ratios, or quote units. `value_eur` is the
+# broker-reported snapshot value and is used as the fallback when a live quote is
+# unavailable.
+PORTFOLIO_ACCOUNTS = [
+    {
+        "account_id": "1182076586",
+        "cash_balance_eur": 48180.73,
+        "holdings": [
+            {"isin": "IE00B4L5Y983", "wkn": "A0RPWH", "symbol": "EUNL.DE", "quantity": 734.876, "value_eur": 94773.28, "cost_basis_eur": 44941.80, "name": "iShares Core MSCI World", "industry": "Index", "quote_currency": "EUR"},
+            {"isin": "US9497461015", "wkn": "857949", "symbol": "WFC", "quantity": 400.0, "value_eur": 30359.70, "cost_basis_eur": 10337.70, "name": "Wells Fargo", "industry": "Bank", "quote_currency": "USD"},
+            {"isin": "DE0006047004", "wkn": "604700", "symbol": "HEI.DE", "quantity": 185.0, "value_eur": 30201.25, "cost_basis_eur": 9400.20, "name": "Heidelberg Materials", "industry": "Materials", "quote_currency": "EUR"},
+            {"isin": "US1729674242", "wkn": "A1H92V", "symbol": "C", "quantity": 200.0, "value_eur": 23524.00, "cost_basis_eur": 9248.00, "name": "Citigroup", "industry": "Bank", "quote_currency": "USD"},
+            {"isin": "LU0411078552", "wkn": "DBX0B5", "symbol": "DBPG.DE", "quantity": 45.0, "value_eur": 14418.00, "cost_basis_eur": 6510.60, "name": "Xtrackers S&P 500 2x Leveraged", "industry": "Index", "quote_currency": "EUR"},
+            {"isin": "IE00BLS09N40", "wkn": "A14JCP", "symbol": "3BAL.L", "quantity": 578.0, "value_eur": 58083.22, "cost_basis_eur": 4171.63, "name": "WisdomTree EURO STOXX Banks 3x", "industry": "European Banks", "quote_currency": "GBP", "quote_multiplier": 0.01},
+            {"isin": "DE000A0F5UJ7", "wkn": "A0F5UJ", "symbol": "EXV1.DE", "quantity": 284.0, "value_eur": 12126.80, "cost_basis_eur": 3998.72, "name": "iShares STOXX Europe 600 Banks", "industry": "European Banks", "quote_currency": "EUR"},
+            {"isin": "DE0006062144", "wkn": "606214", "symbol": "1COV.DE", "quantity": 100.0, "value_eur": 6040.00, "cost_basis_eur": 3840.50, "name": "Covestro", "industry": "Chemicals", "quote_currency": "EUR"},
+            {"isin": "GB0007980591", "wkn": "850517", "symbol": "BP.L", "quantity": 1000.0, "value_eur": 6225.00, "cost_basis_eur": 3779.00, "name": "BP", "industry": "Oil & Gas", "quote_currency": "GBP", "quote_multiplier": 0.01},
+            {"isin": "US84615Q1031", "wkn": "A42D4F", "symbol": None, "quantity": 28.0, "value_eur": 3321.21, "cost_basis_eur": 3275.00, "name": "SpaceX Class A", "industry": "Aerospace", "quote_currency": "USD"},
+            {"isin": "GB00BP6MXD84", "wkn": "A3C99G", "symbol": "SHEL.L", "quantity": 150.0, "value_eur": 5883.00, "cost_basis_eur": 2768.58, "name": "Shell", "industry": "Oil & Gas", "quote_currency": "GBP", "quote_multiplier": 0.01},
+            {"isin": "LU0252633754", "wkn": "LYX0AC", "symbol": "LYY7.DE", "quantity": 15.543, "value_eur": 3738.09, "cost_basis_eur": 2581.49, "name": "Amundi DAX III", "industry": "DAX", "quote_currency": "EUR"},
+            {"isin": "US3682872078", "wkn": "903276", "symbol": None, "quantity": 400.0, "value_eur": 0.00, "cost_basis_eur": 1776.80, "name": "Gazprom ADR", "industry": "Oil & Gas", "quote_currency": "EUR"},
+            {"isin": "US69608A1088", "wkn": "A2QA4J", "symbol": "PLTR", "quantity": 100.0, "value_eur": 15290.00, "cost_basis_eur": 895.33, "name": "Palantir", "industry": "Software", "quote_currency": "USD"},
+            {"isin": "LU0256839274", "wkn": "A0KDMU", "symbol": "UQ2B.F", "quantity": 2.897, "value_eur": 1079.35, "cost_basis_eur": 845.22, "name": "AGIF Europe Equity Growth", "industry": "European Equity", "quote_currency": "EUR"},
+            {"isin": "DE0005140008", "wkn": "514000", "symbol": "DBK.DE", "quantity": 1.0, "value_eur": 33.20, "cost_basis_eur": 10.76, "name": "Deutsche Bank", "industry": "Bank", "quote_currency": "EUR"},
+        ],
+    },
+    {
+        "account_id": "1183194735",
+        "cash_balance_eur": 34693.63,
+        "holdings": [
+            {"isin": "US9100471096", "wkn": "A1C6TV", "symbol": "UAL", "quantity": 60.0, "value_eur": 6570.00, "cost_basis_eur": 3088.20, "name": "United Airlines", "industry": "Airlines", "quote_currency": "USD"},
+            {"isin": "LU0256839274", "wkn": "A0KDMU", "symbol": "UQ2B.F", "quantity": 3.404, "value_eur": 1268.25, "cost_basis_eur": 1241.57, "name": "AGIF Europe Equity Growth", "industry": "European Equity", "quote_currency": "EUR"},
+            {"isin": "US1729674242", "wkn": "A1H92V", "symbol": "C", "quantity": 140.0, "value_eur": 16466.80, "cost_basis_eur": 6421.20, "name": "Citigroup", "industry": "Bank", "quote_currency": "USD"},
+            {"isin": "IE00B4L5Y983", "wkn": "A0RPWH", "symbol": "EUNL.DE", "quantity": 117.299, "value_eur": 15126.88, "cost_basis_eur": 10427.78, "name": "iShares Core MSCI World", "industry": "Index", "quote_currency": "EUR"},
+            {"isin": "LU0290358497", "wkn": "DBX0AN", "symbol": "XEON.DE", "quantity": 334.0, "value_eur": 50054.24, "cost_basis_eur": 49878.89, "name": "Xtrackers EUR Overnight Rate", "industry": "Money Market", "quote_currency": "EUR"},
+            {"isin": "US38141G1040", "wkn": "920332", "symbol": "GS", "quantity": 9.0, "value_eur": 8049.60, "cost_basis_eur": 2418.75, "name": "Goldman Sachs", "industry": "Bank", "quote_currency": "USD"},
+            {"isin": "IE00BLS09N40", "wkn": "A14JCP", "symbol": "3BAL.L", "quantity": 70.0, "value_eur": 7034.30, "cost_basis_eur": 1148.14, "name": "WisdomTree EURO STOXX Banks 3x", "industry": "European Banks", "quote_currency": "GBP", "quote_multiplier": 0.01},
+            {"isin": "US8447411088", "wkn": "862837", "symbol": "LUV", "quantity": 100.0, "value_eur": 3890.00, "cost_basis_eur": 2405.00, "name": "Southwest Airlines", "industry": "Airlines", "quote_currency": "USD"},
+        ],
+    },
 ]
+
+
+def _aggregate_stocks(accounts):
+    """Aggregate account-level legal holdings by ISIN for dashboard display."""
+    aggregated = {}
+    for account in accounts:
+        account_id = account["account_id"]
+        for holding in account["holdings"]:
+            isin = holding["isin"]
+            if isin not in aggregated:
+                aggregated[isin] = {
+                    key: value
+                    for key, value in holding.items()
+                    if key not in {"quantity", "value_eur", "cost_basis_eur"}
+                }
+                aggregated[isin].update({
+                    "quantity": 0.0,
+                    "value_eur": 0.0,
+                    "cost_basis_eur": 0.0,
+                    "account_quantities": {},
+                })
+
+            position = aggregated[isin]
+            position["quantity"] += holding["quantity"]
+            position["value_eur"] += holding["value_eur"]
+            position["cost_basis_eur"] += holding["cost_basis_eur"]
+            position["account_quantities"][account_id] = holding["quantity"]
+
+    stocks = []
+    for position in aggregated.values():
+        # `price` is always an EUR-per-legal-unit fallback. Live quote currency
+        # conversion is handled by PriceFetcher.
+        position["price"] = (
+            position["value_eur"] / position["quantity"]
+            if position["quantity"]
+            else 0.0
+        )
+        stocks.append(position)
+
+    broker_cash = sum(account["cash_balance_eur"] for account in accounts)
+    total_cash = broker_cash - PENDING_CASH_WITHDRAWAL_EUR
+    stocks.append({
+        "isin": "CASH-EUR",
+        "wkn": None,
+        "symbol": "CASH",
+        "quantity": total_cash,
+        "price": 1.0,
+        "value_eur": total_cash,
+        "cost_basis_eur": total_cash,
+        "name": "Cash",
+        "industry": None,
+        "quote_currency": "EUR",
+        "account_quantities": {
+            account["account_id"]: account["cash_balance_eur"]
+            for account in accounts
+        },
+        "broker_reported_value_eur": broker_cash,
+        "pending_withdrawal_eur": PENDING_CASH_WITHDRAWAL_EUR,
+    })
+    return stocks
+
+
+STOCKS = _aggregate_stocks(PORTFOLIO_ACCOUNTS)
+
+
+def get_asset_reconciliation():
+    """Reconcile broker assets to the net amount attributed to the owners."""
+    broker_reported_assets = round(
+        sum(
+            account["cash_balance_eur"]
+            + sum(holding["value_eur"] for holding in account["holdings"])
+            for account in PORTFOLIO_ACCOUNTS
+        ),
+        2,
+    )
+    total_assets = round(sum(stock["value_eur"] for stock in STOCKS), 2)
+    return {
+        "as_of": ASSET_SNAPSHOT_DATE,
+        "broker_reported_assets_eur": broker_reported_assets,
+        "pending_cash_withdrawal_eur": PENDING_CASH_WITHDRAWAL_EUR,
+        "total_assets_eur": total_assets,
+        "attributed_assets_eur": total_assets,
+        "other_overhang_eur": 0.0,
+    }
+
+
+ASSET_RECONCILIATION = get_asset_reconciliation()
