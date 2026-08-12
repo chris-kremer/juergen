@@ -600,10 +600,6 @@ class PortfolioDashboard:
 
         st.markdown("---")
 
-        self.show_tax_overview(stocks_with_prices, user, lang)
-
-        st.markdown("---")
-
         # Investment tranche performance (moved up for better visibility)
         self.show_investment_tranches(user, stocks_with_prices, lang)
 
@@ -615,6 +611,9 @@ class PortfolioDashboard:
             st.markdown("---")
 
             self.show_admin_aum_chart(stocks_with_prices, lang)
+            st.markdown("---")
+
+            self.show_tax_overview(stocks_with_prices, user, lang)
             st.markdown("---")
 
             # Show login statistics for admin
