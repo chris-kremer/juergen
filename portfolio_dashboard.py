@@ -1134,6 +1134,7 @@ class PortfolioDashboard:
                 colorbar=dict(
                     title=f"{return_label} (%)",
                     ticksuffix="%",
+                    tickformat=".2f",
                     thickness=14,
                     len=0.72,
                 ),
@@ -1244,7 +1245,8 @@ class PortfolioDashboard:
             y=initial_portfolio_values,
             mode='lines',
             name='Your Portfolio',
-            line=dict(color='#1f77b4', width=3)
+            line=dict(color='#1f77b4', width=3),
+            hovertemplate="%{x|%d %b %Y}<br>%{y:.2f}<extra></extra>",
         ))
         
         urth_trace = fig.add_trace(go.Scatter(
@@ -1252,7 +1254,8 @@ class PortfolioDashboard:
             y=initial_urth_values,
             mode='lines',
             name=f'{BENCHMARK_LABEL} Benchmark',
-            line=dict(color='#ff7f0e', width=2, dash='dash')
+            line=dict(color='#ff7f0e', width=2, dash='dash'),
+            hovertemplate="%{x|%d %b %Y}<br>%{y:.2f}<extra></extra>",
         ))
         
         # Add baseline at 100
@@ -1269,6 +1272,7 @@ class PortfolioDashboard:
             title=get_text('portfolio_vs_benchmark', lang),
             xaxis_title="Date",
             yaxis_title=get_text('relative_performance', lang),
+            yaxis_tickformat=".2f",
             height=400,
             hovermode='x unified',
             legend=dict(
@@ -1343,22 +1347,22 @@ class PortfolioDashboard:
                 with col1:
                     st.metric(
                         "Your Performance", 
-                        f"{portfolio_values[-1]:.1f}",
-                        f"{portfolio_change:+.1f}"
+                        f"{portfolio_values[-1]:.2f}",
+                        f"{portfolio_change:+.2f}"
                     )
                 
                 with col2:
                     st.metric(
                         f"{BENCHMARK_LABEL} Performance",
-                        f"{urth_values[-1]:.1f}",
-                        f"{urth_change:+.1f}"
+                        f"{urth_values[-1]:.2f}",
+                        f"{urth_change:+.2f}"
                     )
                 
                 with col3:
                     outperformance = portfolio_change - urth_change
                     st.metric(
                         "Outperformance",
-                        f"{outperformance:+.1f}",
+                        f"{outperformance:+.2f}",
                         delta_color="normal" if outperformance >= 0 else "inverse"
                     )
     
@@ -1536,6 +1540,7 @@ class PortfolioDashboard:
                 title=get_text('yearly_stock_performance', lang),
                 xaxis_title="Date",
                 yaxis_title=get_text('return_percentage', lang),
+                yaxis_tickformat=".2f",
                 height=500,
                 hovermode='x unified',
                 legend=dict(
@@ -1667,6 +1672,7 @@ class PortfolioDashboard:
             fig.update_layout(
                 xaxis_title="",
                 yaxis_title="Return (%)",
+                yaxis_tickformat=".2f",
                 showlegend=False,
                 height=400,
                 xaxis_tickangle=-45
@@ -1683,7 +1689,7 @@ class PortfolioDashboard:
                     line_dash="dot", 
                     line_color="#1f77b4", 
                     opacity=0.7,
-                    annotation_text=f"{BENCHMARK_LABEL} Benchmark: {urth_return:.1f}%",
+                    annotation_text=f"{BENCHMARK_LABEL} Benchmark: {urth_return:.2f}%",
                     annotation_position="top right"
                 )
             
@@ -2254,20 +2260,23 @@ class PortfolioDashboard:
                     x=bar_df['Date'],
                     y=bar_df['Return %'],
                     name='Total Return %',
-                    marker_color='lightblue'
+                    marker_color='lightblue',
+                    hovertemplate="%{x}<br>%{y:.2f}%<extra></extra>",
                 ))
 
                 fig.add_trace(go.Bar(
                     x=bar_df['Date'],
                     y=bar_df['Annualized %'],
                     name='Annualized Return %',
-                    marker_color='darkblue'
+                    marker_color='darkblue',
+                    hovertemplate="%{x}<br>%{y:.2f}%<extra></extra>",
                 ))
 
                 fig.update_layout(
                     title=f"{get_text('return_pct', lang)} vs {get_text('annualized_return', lang)}",
                     xaxis_title=get_text('investment_date', lang),
                     yaxis_title="Return %",
+                    yaxis_tickformat=".2f",
                     barmode='group',
                     height=400
                 )
