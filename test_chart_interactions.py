@@ -8,7 +8,6 @@ from portfolio_dashboard import (
     allocate_tax_by_earnings,
     build_confirmed_capital_series,
     build_portfolio_heatmap_rows,
-    cap_pooled_tax_to_economic_gains,
     calculate_tax_simulation,
     get_confirmed_portfolio_capital_events,
     get_confirmed_user_investment,
@@ -99,9 +98,34 @@ class ChartInteractionTests(unittest.TestCase):
         self.assertEqual(allocations["loss"], 0)
         self.assertEqual(sum(allocations.values()), 30)
 
-    def test_pooled_tax_is_capped_at_rate_on_total_economic_gains(self):
-        self.assertEqual(cap_pooled_tax_to_economic_gains(60, 200, 0.25), 50)
-        self.assertEqual(cap_pooled_tax_to_economic_gains(40, 200, 0.25), 40)
+    def test_asset_basis_tax_is_split_by_user_earnings(self):
+        stocks = [{
+            "quantity": 1,
+            "price": 100000,
+            "cost_basis_eur": 50000,
+        }]
+        pooled = calculate_tax_simulation(
+            stocks,
+            tax_rate=0.25,
+            invested_capital_eur=40000,
+        )
+        allocations = allocate_tax_by_earnings(
+            pooled["estimated_tax_eur"],
+            {"user_1": 40000, "user_2": 20000},
+        )
+        user_1 = calculate_tax_simulation(
+            stocks,
+            user_percentage=0.5,
+            tax_rate=0.25,
+            invested_capital_eur=10000,
+            allocated_tax_eur=allocations["user_1"],
+        )
+
+        self.assertEqual(pooled["estimated_tax_eur"], 12500)
+        self.assertAlmostEqual(allocations["user_1"], 12500 * 2 / 3)
+        self.assertAlmostEqual(allocations["user_2"], 12500 * 1 / 3)
+        self.assertAlmostEqual(user_1["net_liquidation_value_eur"], 41666.6667, places=3)
+        self.assertAlmostEqual(user_1["tax_equivalent_value_eur"], 52222.2222, places=3)
 
     def test_confirmed_user_investment_supports_owner_and_admin_totals(self):
         users = [

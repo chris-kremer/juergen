@@ -247,18 +247,6 @@ def allocate_tax_by_earnings(total_tax_eur: float, earnings_by_owner: Dict) -> D
     }
 
 
-def cap_pooled_tax_to_economic_gains(
-    tax_from_portfolio_basis_eur: float,
-    total_economic_gains_eur: float,
-    tax_rate: float,
-) -> float:
-    """Do not tax the owner pool above the selected rate on its economic gains."""
-    return min(
-        max(float(tax_from_portfolio_basis_eur), 0.0),
-        max(float(total_economic_gains_eur), 0.0) * tax_rate,
-    )
-
-
 def calculate_historical_portfolio_peak(histories: Dict, stocks: List[Dict]):
     """Return the peak daily-close value for the current portfolio composition."""
     non_cash_stocks = [stock for stock in stocks if stock.get("symbol") != "CASH"]
@@ -903,11 +891,9 @@ class PortfolioDashboard:
             username: inputs["earnings"]
             for username, inputs in owner_inputs.items()
         }
-        payable_pooled_tax = cap_pooled_tax_to_economic_gains(
-            total_simulation["estimated_tax_eur"],
-            sum(earnings_by_owner.values()),
-            tax_rate,
-        )
+        # The current assets' tax basis determines the entire outstanding tax
+        # bill. Owner-level earnings determine only how that bill is shared.
+        payable_pooled_tax = total_simulation["estimated_tax_eur"]
         owner_tax_allocations = allocate_tax_by_earnings(
             payable_pooled_tax,
             earnings_by_owner,
