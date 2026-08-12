@@ -94,6 +94,61 @@ def test_fixed_corporate_action_is_not_reported_as_failed_live_price():
     assert updated[0]["current_price"] == pytest.approx(59.46)
 
 
+def test_current_prices_skip_nan_latest_close(monkeypatch):
+    history = pd.DataFrame(
+        {"Close": [100.0, 105.0, float("nan")]},
+        index=pd.DatetimeIndex(["2026-08-10", "2026-08-11", "2026-08-12"]),
+    )
+    stock = {
+        "symbol": "TEST",
+        "quantity": 2.0,
+        "price": 90.0,
+        "quote_currency": "EUR",
+    }
+    monkeypatch.setattr(price_fetcher, "fetch_stock_history_eur", lambda *args, **kwargs: history)
+
+    updated, failed = PriceFetcher().fetch_stock_prices([stock], show_progress=False)
+
+    assert failed == []
+    assert updated[0]["current_price"] == pytest.approx(105.0)
+    assert updated[0]["previous_close"] == pytest.approx(100.0)
+
+
+def test_portfolio_calculations_fall_back_from_non_finite_prices():
+    stock = {
+        "symbol": "TEST",
+        "quantity": 2.0,
+        "price": 90.0,
+        "current_price": float("nan"),
+        "previous_close": float("nan"),
+    }
+    fetcher = PriceFetcher()
+
+    assert fetcher.get_portfolio_value([stock]) == pytest.approx(180.0)
+    assert fetcher.get_stock_value(stock) == pytest.approx(180.0)
+    assert fetcher.get_daily_change_percentage(stock) == 0.0
+    assert fetcher.get_user_daily_change_value(stock, 0.5) == 0.0
+
+
+def test_cached_non_finite_quote_is_sanitized_before_dashboard_use():
+    stock = {
+        "symbol": "TEST",
+        "name": "Test Security",
+        "quantity": 2.0,
+        "price": 90.0,
+        "current_price": float("nan"),
+        "previous_close": float("nan"),
+        "price_source": "live",
+    }
+
+    sanitized, repaired = PriceFetcher().sanitize_stock_prices([stock])
+
+    assert repaired == ["TEST"]
+    assert sanitized[0]["current_price"] == 90.0
+    assert sanitized[0]["previous_close"] == 90.0
+    assert sanitized[0]["price_source"] == "default"
+
+
 def test_spacex_uses_ipo_price_when_history_contains_listing_date():
     spacex = _position("US84615Q1031")
     history = pd.DataFrame(

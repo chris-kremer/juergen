@@ -3,6 +3,7 @@ Stock price fetching functionality with fallback to default values
 """
 
 import copy
+import math
 import threading
 import time as time_module
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -17,6 +18,27 @@ FX_TICKERS = {
     "USD": ("EURUSD=X", True),   # Yahoo quote is USD per EUR; invert it.
     "GBP": ("GBPEUR=X", False),  # Yahoo quote is EUR per GBP.
 }
+
+
+def _finite_positive_price(value, fallback=None):
+    """Return a usable price, or the supplied fallback for NaN/inf/non-positive data."""
+    try:
+        price = float(value)
+    except (TypeError, ValueError):
+        price = None
+    if price is not None and math.isfinite(price) and price > 0:
+        return price
+    if fallback is None:
+        return None
+    return _finite_positive_price(fallback)
+
+
+def _valid_close_series(history: pd.DataFrame) -> pd.Series:
+    """Return finite positive closes while preserving their original order/index."""
+    if history is None or history.empty or "Close" not in history:
+        return pd.Series(dtype=float)
+    closes = pd.to_numeric(history["Close"], errors="coerce")
+    return closes[closes.map(lambda value: math.isfinite(value) and value > 0)]
 
 
 def _fetch_yfinance_history_uncached(symbol: str, period: str = None, start=None, end=None) -> pd.DataFrame:
@@ -216,15 +238,21 @@ class PriceFetcher:
                     period="5d",
                     use_cache=use_cached_history,
                 )
-                if hist.empty:
+                closes = _valid_close_series(hist)
+                if closes.empty:
                     return index, _fallback(stock), display_symbol
 
-                current_price = float(hist["Close"].iloc[-1])
+                current_price = float(closes.iloc[-1])
                 previous_close = None
-                if len(hist) > 1:
-                    previous_close = float(hist["Close"].iloc[-2])
+                if len(closes) > 1:
+                    previous_close = float(closes.iloc[-2])
                 elif "Open" in hist.columns:
-                    previous_close = float(hist["Open"].iloc[-1])
+                    previous_close = _finite_positive_price(
+                        hist.loc[closes.index[-1], "Open"],
+                        current_price,
+                    )
+                else:
+                    previous_close = current_price
 
                 updated_stock = stock.copy()
                 updated_stock["current_price"] = current_price
@@ -285,18 +313,49 @@ class PriceFetcher:
             progress_container.empty()
         
         return updated_stocks, failed_symbols
+
+    def sanitize_stock_prices(self, stocks: List[Dict]) -> Tuple[List[Dict], List[str]]:
+        """Repair cached or externally supplied non-finite quote fields."""
+        sanitized = []
+        repaired_symbols = []
+        for stock in stocks:
+            updated_stock = stock.copy()
+            raw_current = updated_stock.get("current_price")
+            current_price = _finite_positive_price(raw_current, updated_stock["price"])
+            if _finite_positive_price(raw_current) is None:
+                display_symbol = (
+                    updated_stock.get("symbol")
+                    or updated_stock.get("wkn")
+                    or updated_stock.get("name", "Unknown")
+                )
+                if updated_stock.get("symbol") != "CASH":
+                    repaired_symbols.append(display_symbol)
+                updated_stock["price_source"] = "default"
+            updated_stock["current_price"] = current_price
+            updated_stock["previous_close"] = _finite_positive_price(
+                updated_stock.get("previous_close"),
+                current_price,
+            )
+            sanitized.append(updated_stock)
+        return sanitized, repaired_symbols
     
     def get_portfolio_value(self, stocks: List[Dict]) -> float:
         """Calculate total portfolio value"""
         total_value = 0
         for stock in stocks:
-            current_price = stock.get('current_price', stock['price'])
+            current_price = _finite_positive_price(
+                stock.get('current_price'),
+                stock['price'],
+            )
             total_value += stock['quantity'] * current_price
         return total_value
     
     def get_stock_value(self, stock: Dict) -> float:
         """Get individual stock total value"""
-        current_price = stock.get('current_price', stock['price'])
+        current_price = _finite_positive_price(
+            stock.get('current_price'),
+            stock['price'],
+        )
         return stock['quantity'] * current_price
     
     def get_price_change_percentage(self, stock: Dict) -> float:
@@ -304,8 +363,8 @@ class PriceFetcher:
         if stock.get('price_source') == 'default':
             return 0.0
         
-        current_price = stock.get('current_price', stock['price'])
-        original_price = stock['price']
+        current_price = _finite_positive_price(stock.get('current_price'), stock['price'])
+        original_price = _finite_positive_price(stock['price'])
         
         if original_price == 0:
             return 0.0
@@ -314,8 +373,8 @@ class PriceFetcher:
     
     def get_daily_change_percentage(self, stock: Dict) -> float:
         """Calculate daily price change percentage"""
-        current_price = stock.get('current_price', stock['price'])
-        previous_close = stock.get('previous_close')
+        current_price = _finite_positive_price(stock.get('current_price'), stock['price'])
+        previous_close = _finite_positive_price(stock.get('previous_close'))
         
         if previous_close is None or previous_close == 0:
             return 0.0
@@ -324,8 +383,8 @@ class PriceFetcher:
     
     def get_user_daily_change_value(self, stock: Dict, user_percentage: float) -> float:
         """Calculate daily value change for user's portion"""
-        current_price = stock.get('current_price', stock['price'])
-        previous_close = stock.get('previous_close')
+        current_price = _finite_positive_price(stock.get('current_price'), stock['price'])
+        previous_close = _finite_positive_price(stock.get('previous_close'))
         
         if previous_close is None:
             return 0.0
@@ -356,13 +415,14 @@ class PriceFetcher:
             try:
                 hist = fetch_stock_history_eur(stock, period=yf_period)
                 
-                if not hist.empty and len(hist) >= 2:
-                    current_price = float(hist['Close'].iloc[-1])
+                closes = _valid_close_series(hist)
+                if len(closes) >= 2:
+                    current_price = float(closes.iloc[-1])
                     
                     if period == '1d':
                         # For 1-day, use previous day's close or today's open
-                        if len(hist) > 1:
-                            previous_price = float(hist['Close'].iloc[-2])
+                        if len(closes) > 1:
+                            previous_price = float(closes.iloc[-2])
                         else:
                             previous_price = float(hist['Open'].iloc[-1])
                     else:

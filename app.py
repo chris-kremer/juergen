@@ -233,6 +233,13 @@ def main():
         # Show loading message
         with st.spinner(get_text('fetching_prices', lang)):
             stocks_with_prices, failed_symbols = fetch_prices(lang)
+        # A cached Yahoo response can contain NaN for the newest candle. Repair
+        # it before any dashboard calculation, even if the cache predates the
+        # current quote-validation code.
+        stocks_with_prices, repaired_symbols = price_fetcher.sanitize_stock_prices(
+            stocks_with_prices
+        )
+        failed_symbols = list(dict.fromkeys([*failed_symbols, *repaired_symbols]))
         
         # Calculate current portfolio value for messages
         total_portfolio_value = price_fetcher.get_portfolio_value(stocks_with_prices)
