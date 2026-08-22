@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import plotly.graph_objects as go
+import pandas as pd
 
 from portfolio_dashboard import (
     BENCHMARK_LABEL,
@@ -26,6 +27,21 @@ class ChartInteractionTests(unittest.TestCase):
         self.assertEqual([stock["symbol"] for stock in benchmark_stocks], ["LYY7.DE"])
         self.assertEqual(get_text("portfolio_vs_benchmark", "en"), "Portfolio vs DAX Benchmark")
         self.assertEqual(get_text("portfolio_vs_benchmark", "de"), "Portfolio vs DAX Benchmark")
+
+    def test_history_window_uses_latest_finite_close(self):
+        dashboard = PortfolioDashboard(price_fetcher=MagicMock())
+        history = pd.DataFrame(
+            {"Close": [100.0, 104.0, float("nan")]},
+            index=pd.to_datetime(["2026-08-20", "2026-08-21", "2026-08-22"]),
+        )
+
+        price = dashboard._get_price_from_history_window(
+            history,
+            pd.Timestamp("2026-08-18"),
+            pd.Timestamp("2026-08-24"),
+        )
+
+        self.assertEqual(price, 104.0)
 
     def test_tax_simulation_taxes_gains_not_the_entire_asset_value(self):
         stocks = [

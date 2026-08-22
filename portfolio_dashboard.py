@@ -3,6 +3,7 @@ Portfolio dashboard for displaying user's portfolio overview
 """
 
 from html import escape
+import math
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -1385,7 +1386,12 @@ class PortfolioDashboard:
         if window.empty:
             return None
 
-        return float(window['Close'].iloc[-1])
+        valid_closes = [
+            float(value)
+            for value in window['Close']
+            if pd.notna(value) and math.isfinite(float(value))
+        ]
+        return valid_closes[-1] if valid_closes else None
 
     def _get_single_date_data(self, date, user, history_by_symbol=None):
         """Get portfolio and benchmark values for a single date, all in EUR."""
