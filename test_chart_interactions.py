@@ -4,7 +4,9 @@ from unittest.mock import patch
 import plotly.graph_objects as go
 
 from portfolio_dashboard import (
+    BENCHMARK_LABEL,
     PortfolioDashboard,
+    _is_benchmark,
     allocate_tax_by_earnings,
     build_confirmed_capital_series,
     build_portfolio_heatmap_rows,
@@ -12,9 +14,19 @@ from portfolio_dashboard import (
     get_confirmed_portfolio_capital_events,
     get_confirmed_user_investment,
 )
+from config import STOCKS
+from translations import get_text
 
 
 class ChartInteractionTests(unittest.TestCase):
+    def test_historical_chart_uses_dax_as_its_benchmark(self):
+        benchmark_stocks = [stock for stock in STOCKS if _is_benchmark(stock)]
+
+        self.assertEqual(BENCHMARK_LABEL, "DAX")
+        self.assertEqual([stock["symbol"] for stock in benchmark_stocks], ["LYY7.DE"])
+        self.assertEqual(get_text("portfolio_vs_benchmark", "en"), "Portfolio vs DAX Benchmark")
+        self.assertEqual(get_text("portfolio_vs_benchmark", "de"), "Portfolio vs DAX Benchmark")
+
     def test_tax_simulation_taxes_gains_not_the_entire_asset_value(self):
         stocks = [
             {

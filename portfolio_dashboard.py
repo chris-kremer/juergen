@@ -34,8 +34,8 @@ from ui_theme import build_dashboard_header
 pio.templates.default = "plotly_white"
 px.defaults.template = "plotly_white"
 
-BENCHMARK_ISIN = "IE00B4L5Y983"
-BENCHMARK_LABEL = "MSCI World"
+BENCHMARK_ISIN = "LU0252633754"
+BENCHMARK_LABEL = "DAX"
 
 
 def _is_benchmark(stock: Dict) -> bool:
@@ -1149,7 +1149,7 @@ class PortfolioDashboard:
         )
     
     def show_historical_performance_chart(self, user: Dict, lang: str):
-        """Show historical portfolio performance vs the MSCI World holding."""
+        """Show historical portfolio performance vs the DAX holding."""
         
         st.subheader(get_text('historical_performance', lang))
         
