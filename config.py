@@ -66,7 +66,8 @@ USERS = [
             {"amount": 150, "date": "2026-05-27", "type": "Share transfer from Christian"},
             {"amount": 64.26, "date": "2026-05-27", "type": "Share transfer from Christian"},
             {"amount": 50, "date": "2026-06-26", "type": "Share transfer from Christian"},
-            {"amount": 100, "date": "2026-07-01", "type": "Share transfer from Christian"}
+            {"amount": 100, "date": "2026-07-01", "type": "Share transfer from Christian"},
+            {"amount": 50, "date": "2026-08-26", "type": "Share transfer from Christian"}
         ]
     },
     {
@@ -92,7 +93,8 @@ USERS = [
             {"amount": -150, "date": "2026-05-27", "type": "Share transfer to Annika"},
             {"amount": -64.26, "date": "2026-05-27", "type": "Share transfer to Annika"},
             {"amount": -50, "date": "2026-06-26", "type": "Share transfer to Annika"},
-            {"amount": -100, "date": "2026-07-01", "type": "Share transfer to Annika"}
+            {"amount": -100, "date": "2026-07-01", "type": "Share transfer to Annika"},
+            {"amount": -50, "date": "2026-08-26", "type": "Share transfer to Annika"}
         ]
     }
 ]

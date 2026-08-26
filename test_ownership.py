@@ -68,6 +68,26 @@ def test_august_26_transfer_moves_fifty_euros_from_christian_to_annika():
     assert sum(balances.values()) == Decimal("492336.53")
 
 
+def test_august_26_transfer_has_matching_payment_audit_entries():
+    from config import USERS
+
+    owners = {user["username"]: user for user in USERS}
+    annika_event = {
+        "amount": 50,
+        "date": "2026-08-26",
+        "type": "Share transfer from Christian",
+    }
+    christian_event = {
+        "amount": -50,
+        "date": "2026-08-26",
+        "type": "Share transfer to Annika",
+    }
+
+    assert annika_event in owners["annika"]["payments"]
+    assert christian_event in owners["christian"]["payments"]
+    assert annika_event["amount"] + christian_event["amount"] == 0
+
+
 def test_post_checkpoint_contribution_issues_units_at_explicit_nav():
     events = [{
         "date": "2026-08-12",

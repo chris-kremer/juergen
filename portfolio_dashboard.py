@@ -2022,7 +2022,7 @@ class PortfolioDashboard:
                 tranches.append({
                     'date': payment['date'],
                     'amount': payment['amount'],
-                    'type': get_text('additional_payment', lang)
+                    'type': payment.get('type', get_text('additional_payment', lang))
                 })
         elif 'paid_date' in user_config:
             # Single payment
