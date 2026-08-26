@@ -28,7 +28,7 @@ def test_unit_derived_percentages_sum_to_exactly_one():
 
 
 def test_checkpoint_values_equal_unit_balances_at_one_euro_nav():
-    snapshot = get_ownership_snapshot(492336.53)
+    snapshot = get_ownership_snapshot(492336.53, as_of="2026-08-11")
     for username, expected_units in OWNERSHIP_CHECKPOINT["balances"].items():
         assert snapshot[username]["units"] == pytest.approx(float(expected_units))
         assert snapshot[username]["value_eur"] == pytest.approx(float(expected_units))
@@ -54,6 +54,17 @@ def test_post_checkpoint_transfer_moves_units_without_changing_total():
     balances = get_unit_balances(events=events)
     assert balances["christian"] == Decimal("68028.67")
     assert balances["annika"] == Decimal("2370.44")
+    assert sum(balances.values()) == Decimal("492336.53")
+
+
+def test_august_26_transfer_moves_fifty_euros_from_christian_to_annika():
+    balances = get_unit_balances(as_of="2026-08-26")
+    transferred_units = Decimal("50.695022")
+    unit_price = Decimal("0.9862901359026294")
+
+    assert balances["christian"] == Decimal("68128.67") - transferred_units
+    assert balances["annika"] == Decimal("2270.44") + transferred_units
+    assert transferred_units * unit_price == pytest.approx(Decimal("50.00"), abs=Decimal("0.000001"))
     assert sum(balances.values()) == Decimal("492336.53")
 
 

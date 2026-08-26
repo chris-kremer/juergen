@@ -27,7 +27,18 @@ OWNERSHIP_CHECKPOINT = {
 # Add only events after the checkpoint. Supported event types:
 # - contribution/withdrawal: owner, cash_eur, unit_price_eur
 # - transfer: from_owner, to_owner, units
-OWNERSHIP_EVENTS = []
+OWNERSHIP_EVENTS = [
+    {
+        "date": "2026-08-26",
+        "type": "transfer",
+        "from_owner": "christian",
+        "to_owner": "annika",
+        "units": Decimal("50.695022"),
+        "unit_price_eur": Decimal("0.9862901359026294"),
+        "cash_reference_eur": Decimal("50.00"),
+        "note": "Ownership transfer valued at the live portfolio NAV",
+    },
+]
 
 # Audit findings from the two supplied cash-history exports. These items explain
 # what can and cannot safely be reconstructed before the opening checkpoint.
