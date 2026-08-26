@@ -2,7 +2,13 @@ import pandas as pd
 import pytest
 
 import price_fetcher
-from config import ASSET_RECONCILIATION, PORTFOLIO_ACCOUNTS, STOCKS, USERS
+from config import (
+    ASSET_RECONCILIATION,
+    EXECUTED_TRADES,
+    PORTFOLIO_ACCOUNTS,
+    STOCKS,
+    USERS,
+)
 from price_fetcher import (
     PriceFetcher,
     convert_history_to_eur,
@@ -28,16 +34,16 @@ def test_account_and_portfolio_snapshot_totals_reconcile():
     }
 
     assert account_totals == {
-        "1182076586": 353276.83,
+        "1182076586": 299119.33,
         "1183194735": 143153.70,
     }
     assert ASSET_RECONCILIATION == {
-        "as_of": "2026-08-11",
-        "broker_reported_assets_eur": 496430.53,
-        "confirmed_cash_withdrawal_eur": 4000.0,
+        "as_of": "2026-08-26",
+        "broker_reported_assets_eur": 442273.03,
+        "confirmed_cash_withdrawal_eur": 0.0,
         "valuation_adjustments_eur": -94.0,
-        "total_assets_eur": 492336.53,
-        "attributed_assets_eur": 492336.53,
+        "total_assets_eur": 442179.03,
+        "attributed_assets_eur": 442179.03,
         "other_overhang_eur": 0.0,
     }
 
@@ -54,7 +60,7 @@ def test_owner_percentages_reconcile_to_exactly_one_hundred_percent():
 def test_combined_positions_keep_legal_share_counts_and_account_attribution():
     assert _position("IE00B4L5Y983")["quantity"] == pytest.approx(852.175)
     assert _position("US1729674242")["quantity"] == pytest.approx(340.0)
-    assert _position("IE00BLS09N40")["quantity"] == pytest.approx(648.0)
+    assert _position("IE00BLS09N40")["quantity"] == pytest.approx(434.0)
     assert _position("LU0256839274")["quantity"] == pytest.approx(6.301)
 
     assert _position("IE00B4L5Y983")["account_quantities"] == {
@@ -62,9 +68,40 @@ def test_combined_positions_keep_legal_share_counts_and_account_attribution():
         "1183194735": 117.299,
     }
     assert _position("IE00BLS09N40")["account_quantities"] == {
-        "1182076586": 578.0,
+        "1182076586": 364.0,
         "1183194735": 70.0,
     }
+
+
+def test_executed_3bal_sale_is_auditable_and_uses_fifo_remaining_basis():
+    assert EXECUTED_TRADES == [
+        {
+            "date": "2026-08-26",
+            "account_id": "1182076586",
+            "isin": "IE00BLS09N40",
+            "symbol": "3BAL.L",
+            "side": "sale",
+            "quantity": 214.0,
+            "execution_price_eur": 100.02,
+            "gross_proceeds_eur": 21404.28,
+            "post_trade_cash_balance_eur": 15699.17,
+            "basis_method": "FIFO",
+            "source_note": "User-confirmed executed order and post-trade cash balance",
+        }
+    ]
+
+    account = next(
+        account
+        for account in PORTFOLIO_ACCOUNTS
+        if account["account_id"] == "1182076586"
+    )
+    holding = next(
+        holding for holding in account["holdings"] if holding["isin"] == "IE00BLS09N40"
+    )
+    assert account["cash_balance_eur"] == pytest.approx(15699.17)
+    assert holding["quantity"] == pytest.approx(364.0)
+    assert holding["cost_basis_eur"] == pytest.approx(3161.55)
+    assert holding["value_eur"] == pytest.approx(364 * 100.02)
 
 
 def test_fallback_prices_are_eur_per_legal_unit():

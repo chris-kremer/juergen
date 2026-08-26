@@ -99,8 +99,27 @@ USERS = [
     }
 ]
 
-ASSET_SNAPSHOT_DATE = "2026-08-11"
-CONFIRMED_CASH_WITHDRAWAL_EUR = 4000.00
+ASSET_SNAPSHOT_DATE = "2026-08-26"
+
+# The EUR 4,000 transfer is already reflected in the current broker cash balance
+# below. Keeping a separate deduction would remove it from portfolio assets twice.
+CONFIRMED_CASH_WITHDRAWAL_EUR = 0.00
+
+EXECUTED_TRADES = [
+    {
+        "date": "2026-08-26",
+        "account_id": "1182076586",
+        "isin": "IE00BLS09N40",
+        "symbol": "3BAL.L",
+        "side": "sale",
+        "quantity": 214.0,
+        "execution_price_eur": 100.02,
+        "gross_proceeds_eur": 21404.28,
+        "post_trade_cash_balance_eur": 15699.17,
+        "basis_method": "FIFO",
+        "source_note": "User-confirmed executed order and post-trade cash balance",
+    },
+]
 
 # Legal positions exactly as reported by the two custody accounts. Quantities are
 # never adjusted for exchange rates, ADR ratios, or quote units. `value_eur` is the
@@ -109,14 +128,14 @@ CONFIRMED_CASH_WITHDRAWAL_EUR = 4000.00
 PORTFOLIO_ACCOUNTS = [
     {
         "account_id": "1182076586",
-        "cash_balance_eur": 48180.73,
+        "cash_balance_eur": 15699.17,
         "holdings": [
             {"isin": "IE00B4L5Y983", "wkn": "A0RPWH", "symbol": "EUNL.DE", "quantity": 734.876, "value_eur": 94773.28, "cost_basis_eur": 44941.80, "name": "iShares Core MSCI World", "industry": "Index", "quote_currency": "EUR"},
             {"isin": "US9497461015", "wkn": "857949", "symbol": "WFC", "quantity": 400.0, "value_eur": 30359.70, "cost_basis_eur": 10337.70, "name": "Wells Fargo", "industry": "Bank", "quote_currency": "USD"},
             {"isin": "DE0006047004", "wkn": "604700", "symbol": "HEI.DE", "quantity": 185.0, "value_eur": 30201.25, "cost_basis_eur": 9400.20, "name": "Heidelberg Materials", "industry": "Materials", "quote_currency": "EUR"},
             {"isin": "US1729674242", "wkn": "A1H92V", "symbol": "C", "quantity": 200.0, "value_eur": 23524.00, "cost_basis_eur": 9248.00, "name": "Citigroup", "industry": "Bank", "quote_currency": "USD"},
             {"isin": "LU0411078552", "wkn": "DBX0B5", "symbol": "DBPG.DE", "quantity": 45.0, "value_eur": 14418.00, "cost_basis_eur": 6510.60, "name": "Xtrackers S&P 500 2x Leveraged", "industry": "Index", "quote_currency": "EUR"},
-            {"isin": "IE00BLS09N40", "wkn": "A14JCP", "symbol": "3BAL.L", "quantity": 578.0, "value_eur": 58083.22, "cost_basis_eur": 4171.63, "name": "WisdomTree EURO STOXX Banks 3x", "industry": "European Banks", "quote_currency": "GBP", "quote_multiplier": 0.01},
+            {"isin": "IE00BLS09N40", "wkn": "A14JCP", "symbol": "3BAL.L", "quantity": 364.0, "value_eur": 36407.28, "cost_basis_eur": 3161.55, "name": "WisdomTree EURO STOXX Banks 3x", "industry": "European Banks", "quote_currency": "GBP", "quote_multiplier": 0.01},
             {"isin": "DE000A0F5UJ7", "wkn": "A0F5UJ", "symbol": "EXV1.DE", "quantity": 284.0, "value_eur": 12126.80, "cost_basis_eur": 3998.72, "name": "iShares STOXX Europe 600 Banks", "industry": "European Banks", "quote_currency": "EUR"},
             {"isin": "DE0006062144", "wkn": "606214", "symbol": None, "quantity": 100.0, "value_eur": 5946.00, "broker_value_eur": 6040.00, "cost_basis_eur": 3840.50, "name": "Covestro (pending squeeze-out)", "industry": "Chemicals", "quote_currency": "EUR", "price_mode": "fixed", "fixed_price_reason": "Pending cash compensation at EUR 59.46 per share"},
             {"isin": "GB0007980591", "wkn": "850517", "symbol": "BP.L", "quantity": 1000.0, "value_eur": 6225.00, "cost_basis_eur": 3779.00, "name": "BP", "industry": "Oil & Gas", "quote_currency": "GBP", "quote_multiplier": 0.01},
