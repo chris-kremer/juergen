@@ -34,16 +34,16 @@ def test_account_and_portfolio_snapshot_totals_reconcile():
     }
 
     assert account_totals == {
-        "1182076586": 299119.33,
+        "1182076586": 347300.06,
         "1183194735": 143153.70,
     }
     assert ASSET_RECONCILIATION == {
         "as_of": "2026-08-26",
-        "broker_reported_assets_eur": 442273.03,
-        "confirmed_cash_withdrawal_eur": 0.0,
+        "broker_reported_assets_eur": 490453.76,
+        "confirmed_cash_withdrawal_eur": 4000.0,
         "valuation_adjustments_eur": -94.0,
-        "total_assets_eur": 442179.03,
-        "attributed_assets_eur": 442179.03,
+        "total_assets_eur": 486359.76,
+        "attributed_assets_eur": 486359.76,
         "other_overhang_eur": 0.0,
     }
 
@@ -84,7 +84,7 @@ def test_executed_3bal_sale_is_auditable_and_uses_fifo_remaining_basis():
             "quantity": 214.0,
             "execution_price_eur": 100.02,
             "gross_proceeds_eur": 21404.28,
-            "post_trade_cash_balance_eur": 15699.17,
+            "net_cash_proceeds_eur": 15699.17,
             "basis_method": "FIFO",
             "source_note": "User-confirmed executed order and post-trade cash balance",
         }
@@ -98,7 +98,7 @@ def test_executed_3bal_sale_is_auditable_and_uses_fifo_remaining_basis():
     holding = next(
         holding for holding in account["holdings"] if holding["isin"] == "IE00BLS09N40"
     )
-    assert account["cash_balance_eur"] == pytest.approx(15699.17)
+    assert account["cash_balance_eur"] == pytest.approx(48180.73 + 15699.17)
     assert holding["quantity"] == pytest.approx(364.0)
     assert holding["cost_basis_eur"] == pytest.approx(3161.55)
     assert holding["value_eur"] == pytest.approx(364 * 100.02)
