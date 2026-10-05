@@ -541,7 +541,7 @@ class PortfolioDashboard:
         self._show_metric_grid([
             {
                 "label": get_text('your_portfolio_value', lang),
-                "value": format_currency(user_portfolio_value, lang),
+                "value": format_currency(user_portfolio_value, lang) + (" (+ 10.000)" if user['username'] == 'kremer' else ""),
                 "delta": all_time_high_label,
                 "delta_class": "positive",
                 "all_time_high": bool(all_time_high_label),
