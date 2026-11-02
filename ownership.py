@@ -38,6 +38,26 @@ OWNERSHIP_EVENTS = [
         "cash_reference_eur": Decimal("50.00"),
         "note": "Ownership transfer valued at the live portfolio NAV",
     },
+    {
+        "date": "2026-10-01",
+        "type": "transfer",
+        "from_owner": "christian",
+        "to_owner": "annika",
+        "units": Decimal("52.505780"),
+        "unit_price_eur": Decimal("0.9522761145140879552447591082"),
+        "cash_reference_eur": Decimal("50.00"),
+        "note": "Ownership transfer valued at the 2026-10-01 portfolio NAV",
+    },
+    {
+        "date": "2026-11-01",
+        "type": "transfer",
+        "from_owner": "christian",
+        "to_owner": "annika",
+        "units": Decimal("52.697961"),
+        "unit_price_eur": Decimal("0.9488033193072361297261448384"),
+        "cash_reference_eur": Decimal("50.00"),
+        "note": "Ownership transfer valued at the 2026-10-30 close because 2026-11-01 was a Sunday",
+    },
 ]
 
 # Audit findings from the two supplied cash-history exports. These items explain

@@ -88,6 +88,38 @@ def test_august_26_transfer_has_matching_payment_audit_entries():
     assert annika_event["amount"] + christian_event["amount"] == 0
 
 
+def test_october_and_november_transfers_move_units_from_christian_to_annika():
+    before = get_unit_balances(as_of="2026-09-30")
+    after_october = get_unit_balances(as_of="2026-10-01")
+    after_november = get_unit_balances(as_of="2026-11-01")
+
+    october_units = Decimal("52.505780")
+    november_units = Decimal("52.697961")
+
+    assert after_october["annika"] == before["annika"] + october_units
+    assert after_october["christian"] == before["christian"] - october_units
+    assert after_november["annika"] == after_october["annika"] + november_units
+    assert after_november["christian"] == after_october["christian"] - november_units
+    assert sum(after_november.values()) == Decimal("492336.53")
+
+
+def test_october_and_november_transfers_have_matching_payment_audit_entries():
+    from config import USERS
+
+    owners = {user["username"]: user for user in USERS}
+    for date in ("2026-10-01", "2026-11-01"):
+        assert {
+            "amount": 50,
+            "date": date,
+            "type": "Share transfer from Christian",
+        } in owners["annika"]["payments"]
+        assert {
+            "amount": -50,
+            "date": date,
+            "type": "Share transfer to Annika",
+        } in owners["christian"]["payments"]
+
+
 def test_post_checkpoint_contribution_issues_units_at_explicit_nav():
     events = [{
         "date": "2026-08-12",
