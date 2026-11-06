@@ -168,13 +168,15 @@ EXECUTED_TRADES = [
     },
 ]
 
-# User-reported order only: do not add its quantity to holdings or deduct cash
-# before an execution is confirmed. Limit price and order date were not supplied.
-OPEN_ORDERS = [
-    {"account_id": "1183194735", "isin": "US5951121038", "symbol": "MU",
-     "side": "buy", "quantity": 5.0, "status": "open", "limit_price": None,
-     "reported_date": "2026-11-06", "source_note": "User-reported unfilled additional Micron order"},
-]
+# The previously open five-share Micron order is now user-confirmed executed.
+EXECUTED_TRADES.append({
+    "date": "2026-11-06", "account_id": "1183194735",
+    "isin": "US5951121038", "symbol": "MU", "side": "buy", "quantity": 5.0,
+    "execution_price_eur": 610.00, "gross_cost_eur": 3050.00, "fees_eur": None,
+    "cash_debit_eur": 3050.00, "cash_debit_is_provisional": True,
+    "source_note": "User confirmed the previously open 5-share order filled at EUR 610 per share; trade date is report date, exact execution time and final broker fees/debit not supplied",
+})
+OPEN_ORDERS = []
 
 # Legal positions exactly as reported by the two custody accounts. Quantities are
 # never adjusted for exchange rates, ADR ratios, or quote units. `value_eur` is the
@@ -206,9 +208,9 @@ PORTFOLIO_ACCOUNTS = [
     },
     {
         "account_id": "1183194735",
-        "cash_balance_eur": 30348.92,
+        "cash_balance_eur": 27298.92,
         "holdings": [
-            {"isin": "US5951121038", "wkn": "869020", "symbol": "MU", "quantity": 6.0, "value_eur": 4344.71, "cost_basis_eur": 4344.71, "name": "Micron Technology", "industry": "Semiconductors", "quote_currency": "USD", "acquisition_date": "2026-11-04", "valuation_note": "Acquisition-cost fallback, not a current market mark"},
+            {"isin": "US5951121038", "wkn": "869020", "symbol": "MU", "quantity": 11.0, "value_eur": 7394.71, "cost_basis_eur": 7394.71, "name": "Micron Technology", "industry": "Semiconductors", "quote_currency": "USD", "acquisition_date": "2026-11-04", "cost_basis_note": "Includes 5 additional shares at EUR 610 on report date 2026-11-06; fees for that fill not supplied", "valuation_note": "Acquisition-cost fallback, not a current market mark"},
             {"isin": "US9100471096", "wkn": "A1C6TV", "symbol": "UAL", "quantity": 60.0, "value_eur": 6570.00, "cost_basis_eur": 3088.20, "name": "United Airlines", "industry": "Airlines", "quote_currency": "USD"},
             {"isin": "LU0256839274", "wkn": "A0KDMU", "symbol": "UQ2B.F", "quantity": 3.404, "value_eur": 1268.25, "cost_basis_eur": 1241.57, "name": "AGIF Europe Equity Growth", "industry": "European Equity", "quote_currency": "EUR"},
             {"isin": "US1729674242", "wkn": "A1H92V", "symbol": "C", "quantity": 140.0, "value_eur": 16466.80, "cost_basis_eur": 6421.20, "name": "Citigroup", "industry": "Bank", "quote_currency": "USD"},
