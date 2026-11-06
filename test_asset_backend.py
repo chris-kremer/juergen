@@ -74,7 +74,7 @@ def test_combined_positions_keep_legal_share_counts_and_account_attribution():
 
 
 def test_executed_3bal_sales_are_auditable_and_update_cash_and_remaining_units():
-    assert EXECUTED_TRADES == [
+    assert [trade for trade in EXECUTED_TRADES if trade["side"] == "sale"] == [
         {
             "date": "2026-08-26",
             "account_id": "1182076586",
@@ -111,7 +111,13 @@ def test_executed_3bal_sales_are_auditable_and_update_cash_and_remaining_units()
     holding = next(
         holding for holding in account["holdings"] if holding["isin"] == "IE00BLS09N40"
     )
-    assert account["cash_balance_eur"] == pytest.approx(48180.73 + 15699.17 + 14689.34)
+    buy_debits = sum(
+        trade["cash_debit_eur"] for trade in EXECUTED_TRADES
+        if trade["side"] == "buy" and trade["account_id"] == account["account_id"]
+    )
+    assert account["cash_balance_eur"] == pytest.approx(
+        48180.73 + 15699.17 + 14689.34 - buy_debits
+    )
     assert holding["quantity"] == pytest.approx(164.0)
     assert holding["cost_basis_eur"] == pytest.approx(1424.43)
     assert holding["cost_basis_note"] == (

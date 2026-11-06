@@ -104,9 +104,12 @@ USERS = [
 ]
 
 ASSET_SNAPSHOT_DATE = "2026-09-22"
+# Preserve the original valuation/capital checkpoint: existing marks have not
+# all been refreshed. Later purchases below use acquisition-cost fallbacks.
+HOLDINGS_UPDATED_DATE = "2026-11-06"
 
-# The EUR 4,000 transfer remains excluded from attributed portfolio cash. The
-# confirmed sale proceeds below increase the existing broker cash balance.
+# The EUR 4,000 transfer remains excluded from attributed portfolio cash.
+# Cash balances include the executed trades below, not the unfilled open order.
 CONFIRMED_CASH_WITHDRAWAL_EUR = 4000.00
 
 EXECUTED_TRADES = [
@@ -136,6 +139,41 @@ EXECUTED_TRADES = [
         "basis_method": "proportional estimate",
         "source_note": "User-confirmed after-tax proceeds; gross execution details not supplied",
     },
+    {
+        "date": "2026-11-03",
+        "settlement_date": "2026-11-05",
+        "account_id": "1182076586",
+        "isin": "US7960502018", "symbol": "SSUN.F", "side": "buy", "quantity": 2.0,
+        "execution_price_eur": None, "gross_cost_eur": None, "fees_eur": None,
+        "cash_debit_eur": 5894.98, "cash_debit_is_provisional": False,
+        "source_note": "User-confirmed 2 preferred GDRs and broker booking debit; execution/fee split not supplied",
+    },
+    {
+        "date": "2026-11-04",
+        "settlement_date": "2026-11-06",
+        "account_id": "1183194735",
+        "isin": "US5951121038", "symbol": "MU", "side": "buy", "quantity": 6.0,
+        "execution_price_eur": None, "gross_cost_eur": None, "fees_eur": None,
+        "cash_debit_eur": 4344.71, "cash_debit_is_provisional": False,
+        "source_note": "User-confirmed 6 shares and broker booking debit; execution/fee split not supplied",
+    },
+    {
+        "date": "2026-11-05",
+        "execution_time": "2026-11-05T17:51:19+01:00", "venue": "gettex",
+        "account_id": "1182076586",
+        "isin": "US67066G1040", "symbol": "NVDA", "side": "buy", "quantity": 15.0,
+        "execution_price_eur": 166.40, "gross_cost_eur": 2496.00, "fees_eur": None,
+        "cash_debit_eur": 2496.00, "cash_debit_is_provisional": True,
+        "source_note": "User-confirmed executed order; cash/basis use gross fill cost pending final broker fees/debit",
+    },
+]
+
+# User-reported order only: do not add its quantity to holdings or deduct cash
+# before an execution is confirmed. Limit price and order date were not supplied.
+OPEN_ORDERS = [
+    {"account_id": "1183194735", "isin": "US5951121038", "symbol": "MU",
+     "side": "buy", "quantity": 5.0, "status": "open", "limit_price": None,
+     "reported_date": "2026-11-06", "source_note": "User-reported unfilled additional Micron order"},
 ]
 
 # Legal positions exactly as reported by the two custody accounts. Quantities are
@@ -145,8 +183,10 @@ EXECUTED_TRADES = [
 PORTFOLIO_ACCOUNTS = [
     {
         "account_id": "1182076586",
-        "cash_balance_eur": 78569.24,
+        "cash_balance_eur": 70178.26,
         "holdings": [
+            {"isin": "US7960502018", "wkn": "881823", "symbol": "SSUN.F", "quantity": 2.0, "value_eur": 5894.98, "cost_basis_eur": 5894.98, "name": "Samsung Electronics preferred GDR", "industry": "Semiconductors", "quote_currency": "EUR", "underlying_shares_per_receipt": 25, "acquisition_date": "2026-11-03", "valuation_note": "Acquisition-cost fallback; live EUR quote is per GDR, not per underlying share"},
+            {"isin": "US67066G1040", "wkn": "918422", "symbol": "NVDA", "quantity": 15.0, "value_eur": 2496.00, "cost_basis_eur": 2496.00, "name": "Nvidia", "industry": "Semiconductors", "quote_currency": "USD", "acquisition_date": "2026-11-05", "cost_basis_note": "Provisional gross fill cost; broker fees/final cash debit not yet supplied", "valuation_note": "Acquisition-cost fallback, not a current market mark"},
             {"isin": "IE00B4L5Y983", "wkn": "A0RPWH", "symbol": "EUNL.DE", "quantity": 734.876, "value_eur": 94773.28, "cost_basis_eur": 44941.80, "name": "iShares Core MSCI World", "industry": "Index", "quote_currency": "EUR"},
             {"isin": "US9497461015", "wkn": "857949", "symbol": "WFC", "quantity": 400.0, "value_eur": 30359.70, "cost_basis_eur": 10337.70, "name": "Wells Fargo", "industry": "Bank", "quote_currency": "USD"},
             {"isin": "DE0006047004", "wkn": "604700", "symbol": "HEI.DE", "quantity": 185.0, "value_eur": 30201.25, "cost_basis_eur": 9400.20, "name": "Heidelberg Materials", "industry": "Materials", "quote_currency": "EUR"},
@@ -166,8 +206,9 @@ PORTFOLIO_ACCOUNTS = [
     },
     {
         "account_id": "1183194735",
-        "cash_balance_eur": 34693.63,
+        "cash_balance_eur": 30348.92,
         "holdings": [
+            {"isin": "US5951121038", "wkn": "869020", "symbol": "MU", "quantity": 6.0, "value_eur": 4344.71, "cost_basis_eur": 4344.71, "name": "Micron Technology", "industry": "Semiconductors", "quote_currency": "USD", "acquisition_date": "2026-11-04", "valuation_note": "Acquisition-cost fallback, not a current market mark"},
             {"isin": "US9100471096", "wkn": "A1C6TV", "symbol": "UAL", "quantity": 60.0, "value_eur": 6570.00, "cost_basis_eur": 3088.20, "name": "United Airlines", "industry": "Airlines", "quote_currency": "USD"},
             {"isin": "LU0256839274", "wkn": "A0KDMU", "symbol": "UQ2B.F", "quantity": 3.404, "value_eur": 1268.25, "cost_basis_eur": 1241.57, "name": "AGIF Europe Equity Growth", "industry": "European Equity", "quote_currency": "EUR"},
             {"isin": "US1729674242", "wkn": "A1H92V", "symbol": "C", "quantity": 140.0, "value_eur": 16466.80, "cost_basis_eur": 6421.20, "name": "Citigroup", "industry": "Bank", "quote_currency": "USD"},
