@@ -77,6 +77,7 @@ def build_portfolio_heatmap_rows(
         if user_value <= 0:
             continue
 
+        performance_basis = "EUR acquisition basis"
         if color_mode == "daily":
             previous_close = stock.get("previous_close")
             performance = (
@@ -85,7 +86,13 @@ def build_portfolio_heatmap_rows(
                 else 0.0
             )
         else:
-            cost_basis = float(stock.get("cost_basis_eur", 0.0))
+            if stock.get("cost_basis_eur") is None and stock.get("cost_basis_usd"):
+                from shared_portfolio_adjustments import REFERENCE_EURUSD
+                fx = stock.get("valuation_fx_rate", 1.0 / REFERENCE_EURUSD)
+                cost_basis = stock["cost_basis_usd"] * fx
+                performance_basis = "USD cost at valuation FX, not historical EUR return"
+            else:
+                cost_basis = float(stock.get("cost_basis_eur", 0.0))
             performance = (
                 (position_value - cost_basis) / cost_basis * 100
                 if cost_basis > 0
@@ -99,6 +106,7 @@ def build_portfolio_heatmap_rows(
             "industry": "Cash" if is_cash else (stock.get("industry") or "Other"),
             "value_eur": user_value,
             "performance_pct": performance,
+            "performance_basis": performance_basis,
             "quantity": float(stock.get("quantity", 0.0)) * user_percentage,
         })
 
@@ -180,6 +188,9 @@ def calculate_tax_simulation(
     """Estimate liquidation tax and a gain-only 25% equivalent value."""
     if not 0 <= tax_rate < 1:
         raise ValueError("Tax rate must be between zero and one")
+
+    if any(stock.get("cost_basis_eur", 0.0) is None for stock in stocks):
+        raise ValueError("EUR acquisition basis unknown; cannot estimate liquidation tax")
 
     gross_value = 0.0
     cost_basis = 0.0
@@ -853,6 +864,9 @@ class PortfolioDashboard:
 
         st.subheader(get_text("tax_overview", lang))
         st.caption(get_text("tax_overview_description", lang))
+        if any(stock.get("cost_basis_eur", 0.0) is None for stock in stocks_with_prices):
+            st.info("Tax simulation unavailable: ANT/SKHY EUR acquisition basis is unknown; USD purchase cost is not historical EUR tax basis.")
+            return
 
         tax_model = st.radio(
             get_text("tax_model", lang),
@@ -1401,8 +1415,11 @@ class PortfolioDashboard:
             total_portfolio_value = 0
             urth_price = None
             
-            # Get data for each stock on this date
+            # The legacy historical scope excludes unknown-date acquisitions and
+            # retains its original cash checkpoint; no backward invented trades.
             for stock in STOCKS:
+                if stock.get('history_policy') == 'exclude_unknown_execution_date':
+                    continue
                 if stock.get('symbol') == 'CASH':
                     total_portfolio_value += stock['quantity'] * 1.0
                     continue
@@ -2281,6 +2298,8 @@ class PortfolioDashboard:
         total_value = 0
 
         for stock in STOCKS:
+            if stock.get('history_policy') == 'exclude_unknown_execution_date':
+                continue
             if stock.get('symbol') == 'CASH':
                 total_value += stock['quantity'] * 1.0
                 continue

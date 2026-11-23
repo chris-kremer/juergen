@@ -284,7 +284,9 @@ def _aggregate_stocks(accounts):
     return stocks
 
 
-STOCKS = _aggregate_stocks(PORTFOLIO_ACCOUNTS)
+from shared_portfolio_adjustments import apply_shared_usd_purchases
+
+STOCKS = apply_shared_usd_purchases(_aggregate_stocks(PORTFOLIO_ACCOUNTS))
 
 
 def get_asset_reconciliation():
