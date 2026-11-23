@@ -633,6 +633,12 @@ class PortfolioDashboard:
             st.markdown("---")
 
         # Historical portfolio performance chart
+        if any(stock.get("history_policy") == "exclude_unknown_execution_date"
+               for stock in stocks_with_prices):
+            st.info(
+                "Historical charts exclude ANT/SKHY and the associated cash correction "
+                "until execution dates are known; current values include them."
+            )
         self.show_historical_performance_chart(user, lang)
 
         st.markdown("---")
@@ -1055,6 +1061,15 @@ class PortfolioDashboard:
                 get_text("heatmap_include_cash", lang),
                 value=True,
                 key=f"portfolio_heatmap_cash_{user['username']}",
+            )
+
+        if color_mode == "since_purchase" and any(
+            stock.get("cost_basis_eur") is None and stock.get("cost_basis_usd")
+            for stock in stocks_with_prices
+        ):
+            st.caption(
+                "ANT/SKHY since-purchase returns are USD-cost returns at valuation FX, "
+                "unlike EUR-basis holdings; the aggregate mixes bases."
             )
 
         rows = build_portfolio_heatmap_rows(
