@@ -306,6 +306,12 @@ class AnnualReportGenerator:
         pdf.ln(4)
         pdf.set_font("Helvetica", "B", 14)
         pdf.cell(0, 8, "Performance Highlights", ln=1)
+        if context.get("history_scope_note"):
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_x(pdf.l_margin)
+            safe_note = context["history_scope_note"].encode("ascii", errors="replace").decode("ascii")
+            pdf.multi_cell(0, 6, safe_note)
+            pdf.set_x(pdf.l_margin)
         pdf.set_font("Helvetica", "", 11)
         summary = context["summary"]
         pdf.cell(
