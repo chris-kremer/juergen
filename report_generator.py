@@ -70,8 +70,10 @@ class AnnualReportGenerator:
         portfolio_series = pd.Series(0.0, index=date_index)
 
         for stock in STOCKS:
+            if stock.get("history_policy") == "exclude_unknown_execution_date":
+                continue
             symbol = stock.get("symbol")
-            default_price = stock.get("current_price", stock["price"])
+            default_price = stock.get("historical_price", stock.get("current_price", stock["price"]))
 
             if symbol == "CASH":
                 cash_series = pd.Series(default_price * stock["quantity"], index=date_index)
@@ -137,6 +139,7 @@ class AnnualReportGenerator:
             "index_symbol": index_symbol,
             "dax_symbol": dax_symbol,
             "end_date": end_date,
+            "history_scope_note": "Legacy historical composition only; ANT/SKHY and their USD cash correction excluded due to unknown execution dates.",
         }
 
     def _get_price_series(
@@ -144,6 +147,8 @@ class AnnualReportGenerator:
     ) -> pd.Series:
         """Fetch EUR close prices and align to business days with graceful fallback."""
         full_index = pd.date_range(start=start, end=end, freq="B")
+        if stock.get("history_policy") == "exclude_unknown_execution_date":
+            return pd.Series(0.0, index=full_index)
         try:
             hist = fetch_stock_history_eur(
                 stock,
@@ -199,7 +204,7 @@ class AnnualReportGenerator:
         )
 
         for stock in stocks:
-            if stock["symbol"] == "CASH":
+            if stock["symbol"] == "CASH" or stock.get("history_policy") == "exclude_unknown_execution_date":
                 continue
 
             series = price_series_map.get(stock["symbol"])

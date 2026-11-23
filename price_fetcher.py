@@ -113,7 +113,7 @@ def convert_history_to_eur(stock: Dict, history: pd.DataFrame, period: str = Non
 def fetch_stock_history_eur(stock: Dict, period: str = None, start=None, end=None, use_cache: bool = True) -> pd.DataFrame:
     """Fetch a security's price history and express every quote in EUR."""
     symbol = stock.get("symbol")
-    if not symbol or symbol == "CASH":
+    if not symbol or symbol == "CASH" or stock.get("history_policy") == "exclude_unknown_execution_date":
         return pd.DataFrame()
     fetcher = fetch_yfinance_history if use_cache else _fetch_yfinance_history_uncached
     history = fetcher(symbol, period=period, start=start, end=end)
@@ -221,6 +221,49 @@ class PriceFetcher:
         total_stocks = len(non_cash_stocks)
         results = {}
 
+        # One valuation-time FX mark for BOTH the new USD assets and their native
+        # cash debit. Never freeze the debit at an estimated EUR purchase cost.
+        common_fx = 1.0
+        fx_source = None
+        fx_date = None
+        fetcher = fetch_yfinance_history if use_cached_history else _fetch_yfinance_history_uncached
+        if any(s.get("shared_adjustment_id") for s in stocks):
+            from shared_portfolio_adjustments import REFERENCE_EURUSD, REFERENCE_FX_DATE
+            try:
+                fx_closes = _valid_close_series(fetcher("EURUSD=X", period="5d"))
+            except Exception:
+                fx_closes = pd.Series(dtype=float)
+            if fx_closes.empty:
+                common_fx = 1.0 / REFERENCE_EURUSD
+                fx_source, fx_date = "reference_fallback", REFERENCE_FX_DATE
+            else:
+                common_fx = 1.0 / float(fx_closes.iloc[-1])
+                fx_source, fx_date = "market_history", fx_closes.index[-1].isoformat()
+
+        def _fetch_shared_usd_stock(index, stock):
+            updated = stock.copy()
+            symbol = stock["symbol"]
+            try:
+                history = fetcher(symbol, period="5d")
+                closes = _valid_close_series(history)
+            except Exception:
+                closes = pd.Series(dtype=float)
+            if closes.empty:
+                native_price = stock["cost_basis_usd"] / stock["quantity"]
+                previous_native = native_price
+                source, failed = "acquisition_cost", symbol
+            else:
+                native_price = float(closes.iloc[-1])
+                previous_native = float(closes.iloc[-2]) if len(closes) > 1 else native_price
+                source, failed = "live", None
+                updated["quote_observation_date"] = closes.index[-1].isoformat()
+            updated.update(current_price=native_price * common_fx,
+                           previous_close=previous_native * common_fx,
+                           display_currency="EUR", price_source=source,
+                           valuation_fx_rate=common_fx, fx_source=fx_source,
+                           fx_observation_date=fx_date)
+            return index, updated, failed
+
         def _fallback(stock, source="default"):
             updated_stock = stock.copy()
             updated_stock["current_price"] = stock["price"]
@@ -232,6 +275,8 @@ class PriceFetcher:
         def _fetch_market_stock(index, stock):
             symbol = stock.get("symbol")
             display_symbol = symbol or stock.get("wkn") or stock.get("name", "Unknown")
+            if stock.get("shared_adjustment_id"):
+                return _fetch_shared_usd_stock(index, stock)
             try:
                 hist = fetch_stock_history_eur(
                     stock,
@@ -268,7 +313,16 @@ class PriceFetcher:
         for index, stock in enumerate(stocks):
             symbol = stock.get("symbol")
             if symbol == "CASH":
-                results[index] = (stock.copy(), None)
+                updated = stock.copy()
+                if stock.get("native_cash_adjustments"):
+                    debit = sum(a["amount"] for a in stock["native_cash_adjustments"])
+                    value = stock["unadjusted_value_eur"] + debit * common_fx
+                    updated.update(current_price=value / stock["quantity"],
+                                   previous_close=value / stock["quantity"],
+                                   display_currency="EUR", price_source="cash_aggregation",
+                                   valuation_fx_rate=common_fx, fx_source=fx_source,
+                                   fx_observation_date=fx_date)
+                results[index] = (updated, None)
             elif stock.get("price_mode") == "fixed":
                 results[index] = (_fallback(stock, source="fixed"), None)
                 completed_non_cash += 1
@@ -304,6 +358,9 @@ class PriceFetcher:
             if results[index][1] is not None
         ]
             
+        if fx_source == "reference_fallback":
+            failed_symbols.append("EURUSD=X")
+
         # Remove all loading UI as soon as the final quote is available.
         if progress_bar:
             progress_bar.empty()
