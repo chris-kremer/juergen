@@ -52,7 +52,7 @@ def test_heatmap_uses_disclosed_usd_return_at_valuation_fx():
     position = next(s.copy() for s in config.STOCKS if s['symbol'] == 'ANT')
     position.update(current_price=100 / 1.25, valuation_fx_rate=1/1.25)
     row = dashboard.build_portfolio_heatmap_rows([position], color_mode='since_purchase')[0]
-    assert row['performance_pct'] == pytest.approx((56.46621678 * 100 / 4825.93 - 1) * 100)
+    assert row['performance_pct'] == pytest.approx((94.02677910 * 100 / 7825.86 - 1) * 100)
     assert row['performance_basis'] == 'USD cost at valuation FX, not historical EUR return'
 
 

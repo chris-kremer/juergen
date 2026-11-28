@@ -16,6 +16,8 @@ SHARED_USD_LOTS = [
      'gross_cost_usd': 2999.93, 'execution_price_usd': None, 'execution_date': None, 'fees_usd': None},
     {'id': 'ant-screenshot-34.46621678', 'symbol': 'ANT', 'quantity': 34.46621678,
      'gross_cost_usd': 2999.93, 'execution_price_usd': None, 'execution_date': None, 'fees_usd': None},
+    {'id': 'ant-screenshot-37.56056232', 'symbol': 'ANT', 'quantity': 37.56056232,
+     'gross_cost_usd': 2999.93, 'execution_price_usd': None, 'execution_date': None, 'fees_usd': None},
     {'id': 'ant-ipo-22-at-83', 'symbol': 'ANT', 'quantity': 22,
      'gross_cost_usd': 1826.0, 'execution_price_usd': 83.0, 'execution_date': None,
      'reported_date': '2026-11-19', 'fees_usd': None},
