@@ -1,44 +1,23 @@
 {
   "status": "applied_incremental_usd_cash_correction",
   "canonical_source": "shared_portfolio_adjustments.SHARED_USD_LOTS",
-  "cash_adjustment_usd": -7825.86,
+  "cash_adjustment_usd": -10825.79,
   "scope": "shared_portfolio",
   "positions": [
+    {"symbol": "SKHY", "name": "SK hynix", "quote_currency": "USD", "quantity": 26.57988951, "cost_basis_usd": 2999.93, "source_image": "/home/chris/.hermes/cache/images/img_05b21236dbb5.png", "execution_date": null, "fees": null},
     {
-      "symbol": "SKHY",
-      "name": "SK hynix",
-      "quote_currency": "USD",
-      "quantity": 26.57988951,
-      "cost_basis_usd": 2999.93,
-      "source_image": "/home/chris/.hermes/cache/images/img_05b21236dbb5.png",
-      "execution_date": null,
-      "fees": null
-    },
-    {
-      "symbol": "ANT",
-      "name": "Anthropic",
-      "quote_currency": "USD",
-      "quantity": 56.46621678,
-      "cost_basis_usd": 4825.93,
+      "symbol": "ANT", "name": "Anthropic", "quote_currency": "USD",
+      "quantity": 94.02677910, "cost_basis_usd": 7825.86,
       "lots": [
-        {
-          "id": "ant-ipo-22-at-83",
-          "quantity": 22,
-          "cost_basis_usd": 1826
-        },
-        {
-          "id": "ant-screenshot-34.46621678",
-          "quantity": 34.46621678,
-          "cost_basis_usd": 2999.93
-        }
+        {"id": "ant-ipo-22-at-83", "quantity": 22, "cost_basis_usd": 1826},
+        {"id": "ant-screenshot-34.46621678", "quantity": 34.46621678, "cost_basis_usd": 2999.93},
+        {"id": "ant-screenshot-37.56056232", "quantity": 37.56056232, "cost_basis_usd": 2999.93, "source_image": "/home/chris/.hermes/cache/images/img_5641aa5fb077.png", "execution_date": null, "fees": null}
       ],
-      "source_image": "/home/chris/.hermes/cache/images/img_ea9987dfa7ff.png",
-      "execution_date": null,
-      "fees": null
+      "source_image": "/home/chris/.hermes/cache/images/img_5641aa5fb077.png", "execution_date": null, "fees": null
     }
   ],
   "funding": "existing portfolio dollar account; internal asset swap, not contribution",
   "account_id": null,
   "cash_debit_eur": null,
-  "note": "Applied to shared holdings and pooled cash using a native USD incremental correction, not an actual negative broker balance. ANT IPO counted once. Dollar account number/opening balance, dates and fees unknown; no historical EUR basis or custody attribution invented. Gross acquisition-cost fallback and debit use common valuation FX, preserving snapshot NAV. Historical charts retain previous scope until execution dates are known."
+  "note": "Applied to shared holdings and pooled cash using a native USD incremental correction, not an actual negative broker balance. ANT IPO and each screenshot lot counted once. Dollar account number/opening balance, dates and fees unknown; no historical EUR basis or custody attribution invented. Screenshot chart selection date/price is not execution confirmation. Gross acquisition-cost fallback and debit use common valuation FX, preserving snapshot NAV. Historical charts retain previous scope until execution dates are known."
 }

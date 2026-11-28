@@ -15,12 +15,12 @@ def added():
 def test_confirmed_shared_positions_and_exact_native_cash():
     positions = {s['symbol']: s for s in added()}
     assert set(positions) == {'ANT', 'SKHY', 'CASH'}
-    assert positions['ANT']['quantity'] == 56.46621678
+    assert positions['ANT']['quantity'] == 94.02677910
     assert positions['SKHY']['quantity'] == 26.57988951
-    assert positions['ANT']['cost_basis_usd'] == 4825.93
+    assert positions['ANT']['cost_basis_usd'] == 7825.86
     assert positions['SKHY']['cost_basis_usd'] == 2999.93
     adjustments = positions['CASH']['native_cash_adjustments']
-    assert sum(Decimal(str(a['amount'])) for a in adjustments) == Decimal('-7825.86')
+    assert sum(Decimal(str(a['amount'])) for a in adjustments) == Decimal('-10825.79')
     assert all(a['currency'] == 'USD' and a['account_id'] is None for a in adjustments)
     assert all(a['opening_balance'] is None for a in adjustments)
     assert all(s['acquisition_date'] is None for s in positions.values() if s['symbol'] != 'CASH')
@@ -37,7 +37,7 @@ def test_ipo_counted_once_and_reapplying_is_idempotent():
     assert lots[0]['execution_price_usd'] == 83
     assert all(lot['execution_date'] is None and lot['fees_usd'] is None for lot in SHARED_USD_LOTS)
     assert apply_shared_usd_purchases(copy.deepcopy(config.STOCKS)) == config.STOCKS
-    assert len({lot['id'] for lot in SHARED_USD_LOTS}) == 3
+    assert len({lot['id'] for lot in SHARED_USD_LOTS}) == 4
 
 
 @pytest.mark.parametrize('eurusd', [1.10, 1.25])
@@ -56,7 +56,7 @@ def test_live_common_fx_and_gross_cost_fallback(monkeypatch, eurusd, missing_quo
     result, failed = PriceFetcher().fetch_stock_prices(added(), show_progress=False)
     by_symbol = {s['symbol']: s for s in result}
     cash = PriceFetcher().get_stock_value(by_symbol['CASH'])
-    assert cash == pytest.approx(93477.18 - 7825.86 / eurusd)
+    assert cash == pytest.approx(93477.18 - 10825.79 / eurusd)
     assert by_symbol['CASH']['valuation_fx_rate'] == pytest.approx(1 / eurusd)
     total = PriceFetcher().get_portfolio_value(result)
     gain_usd = 0 if missing_quotes else sum(s['quantity'] * 100 - s['cost_basis_usd'] for s in positions.values() if s['symbol'] != 'CASH')
@@ -94,7 +94,7 @@ def test_pending_evidence_points_to_canonical_lot_not_another_purchase():
     assert ipo['canonical_lot_id'] == 'ant-ipo-22-at-83'
     assert ipo['execution_date'] is None
     assert shared['status'] == 'applied_incremental_usd_cash_correction'
-    assert shared['cash_adjustment_usd'] == -7825.86
+    assert shared['cash_adjustment_usd'] == -10825.79
     assert shared['account_id'] is None
 
 
